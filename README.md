@@ -1,2 +1,68 @@
-# eaves
-A toolkit that provides scaffolding usability testing AI built prototypes.
+# Eaves
+
+A hideable control panel for coded usability-test prototypes — switch scenarios and variants live, without touching the UI you're testing.
+
+Named for the roofline: it sits at the edge of the structure, not inside it. Anchored to a corner, collapsed by default, toggled with a keyboard shortcut so it never shows up in a screen recording unless you want it to.
+
+## Why
+
+When you build a working prototype for a moderated usability test — in Cursor, Claude Code, or by hand — you often need to jump between states mid-session: happy path, error state, empty state, variant B. Hardcoding that into the product UI means participants see controls that were never part of the design. Eaves keeps that switching logic in its own layer.
+
+## Quick start
+
+No build step, no dependencies. Drop the script in and initialize it.
+
+```html
+<script src="https://unpkg.com/eaves/src/eaves.js"></script>
+<script>
+  Eaves.init({
+    scenarios: [
+      { id: 'happy', label: 'Happy path' },
+      { id: 'error', label: 'Error state', description: 'Incomplete policy on file' },
+      { id: 'empty', label: 'Empty state' }
+    ],
+    onSelect: function (id, scenario) {
+      // your prototype reacts here — swap copy, toggle a class, reset state, etc.
+    }
+  });
+</script>
+```
+
+Or via npm, if you're already bundling:
+
+```bash
+npm install eaves
+```
+
+```js
+import Eaves from 'eaves';
+
+Eaves.init({ scenarios: [...], onSelect: (id) => { ... } });
+```
+
+See `/demo/index.html` for a working example.
+
+## API
+
+`Eaves.init(options)` returns an instance.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `scenarios` | `{ id, label, description? }[]` | — | Required. What shows up in the panel. |
+| `onSelect` | `(id, scenario) => void` | no-op | Fires when a scenario is picked. |
+| `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | `'bottom-right'` | Corner to anchor to. |
+| `shortcut` | string | `'meta+.'` | Keyboard combo to toggle. Also try `'ctrl+.'`. |
+| `label` | string | `'Scenarios'` | Panel header text. |
+| `activeId` | string | first scenario | Which item starts selected. |
+| `startOpen` | boolean | `false` | Whether the panel starts expanded. |
+| `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet. |
+
+Instance methods: `.expand()`, `.collapse()`, `.toggle()`, `.select(id)`, `.destroy()`. `Esc` also closes the panel while it's open.
+
+## Status
+
+Early — v0.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+
+## License
+
+MIT

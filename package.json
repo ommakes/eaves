@@ -1,0 +1,28 @@
+{
+  "name": "eaves",
+  "version": "0.1.0",
+  "description": "A hideable control panel for switching scenarios and variants in coded usability-test prototypes, without touching the UI you're testing.",
+  "main": "src/eaves.js",
+  "unpkg": "src/eaves.js",
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "usability-testing",
+    "ux-research",
+    "prototyping",
+    "design-tools",
+    "debug-panel",
+    "moderated-testing"
+  ],
+  "author": "Om Suthar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ommakes/eaves.git"
+  },
+  "homepage": "https://github.com/ommakes/eaves#readme",
+  "bugs": {
+    "url": "https://github.com/ommakes/eaves/issues"
+  }
+}
