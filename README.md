@@ -51,17 +51,31 @@ See `/demo/index.html` for a working example.
 | `scenarios` | `{ id, label, description? }[]` | — | Required. What shows up in the panel. |
 | `onSelect` | `(id, scenario) => void` | no-op | Fires when a scenario is picked. |
 | `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | `'bottom-right'` | Corner to anchor to. |
-| `shortcut` | string | `'meta+.'` | Keyboard combo to toggle. Also try `'ctrl+.'`. |
+| `shortcut` | string | `'mod+.'` | Keyboard combo to toggle. `mod` resolves to `Cmd` on macOS/iOS and `Ctrl` everywhere else. Pin a modifier explicitly with `meta`/`cmd`, `ctrl`, `shift`, or `alt` — e.g. `'ctrl+shift+k'`. |
 | `label` | string | `'Scenarios'` | Panel header text. |
 | `activeId` | string | first scenario | Which item starts selected. |
 | `startOpen` | boolean | `false` | Whether the panel starts expanded. |
-| `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet. |
+| `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet — call `.mount()` when you're ready. |
 
-Instance methods: `.expand()`, `.collapse()`, `.toggle()`, `.select(id)`, `.destroy()`. `Esc` also closes the panel while it's open.
+Instance methods:
+
+| Method | Description |
+|---|---|
+| `.expand()` | Open the panel. |
+| `.collapse()` | Close the panel. |
+| `.toggle()` | Open if closed, close if open. |
+| `.isOpen()` | `true` while the panel is expanded. |
+| `.select(id)` | Activate a scenario and fire `onSelect`. Unknown ids are ignored. |
+| `.mount()` | Attach to `document.body`. Only needed after `mount: false`. Returns the instance. |
+| `.destroy()` | Remove the panel and unbind the keyboard listener. |
+
+`Esc` also closes the panel while it's open.
 
 ## Status
 
 Early — v0.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+
+The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the trigger button still works.
 
 ## License
 

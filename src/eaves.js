@@ -45,18 +45,39 @@
     document.head.appendChild(style);
   }
 
+  // Cmd and Ctrl are not interchangeable across platforms: `metaKey` is Cmd on
+  // Apple hardware but the Windows/Super key elsewhere, where the OS claims most
+  // combos (Win+. opens the emoji picker on Windows 10/11). So `mod` resolves per
+  // platform instead of hardcoding either one.
+  function isApplePlatform() {
+    if (typeof navigator === 'undefined') return false;
+    var uaData = navigator.userAgentData;
+    if (uaData && typeof uaData.platform === 'string' && uaData.platform) {
+      return /mac/i.test(uaData.platform);
+    }
+    return /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent || '');
+  }
+
   function parseShortcut(shortcut) {
     var parts = shortcut.toLowerCase().split('+').map(function (p) { return p.trim(); });
+    var meta = parts.indexOf('meta') > -1 || parts.indexOf('cmd') > -1;
+    var ctrl = parts.indexOf('ctrl') > -1;
+
+    if (parts.indexOf('mod') > -1) {
+      if (isApplePlatform()) { meta = true; } else { ctrl = true; }
+    }
+
     return {
       key: parts[parts.length - 1],
-      meta: parts.indexOf('meta') > -1 || parts.indexOf('cmd') > -1,
-      ctrl: parts.indexOf('ctrl') > -1,
+      meta: meta,
+      ctrl: ctrl,
       shift: parts.indexOf('shift') > -1,
       alt: parts.indexOf('alt') > -1
     };
   }
 
   function matchesShortcut(e, combo) {
+    if (!e.key) return false;
     return e.key.toLowerCase() === combo.key &&
       e.metaKey === combo.meta &&
       e.ctrlKey === combo.ctrl &&
@@ -66,7 +87,7 @@
 
   function shortcutLabel(combo) {
     var parts = [];
-    if (combo.meta) parts.push('⌘');
+    if (combo.meta) parts.push(isApplePlatform() ? '⌘' : 'Win');
     if (combo.ctrl) parts.push('Ctrl');
     if (combo.shift) parts.push('Shift');
     if (combo.alt) parts.push('Alt');
@@ -89,7 +110,7 @@
     this.scenarios = options.scenarios;
     this.onSelect = options.onSelect || function () {};
     this.position = options.position || 'bottom-right';
-    this.shortcut = parseShortcut(options.shortcut || 'meta+.');
+    this.shortcut = parseShortcut(options.shortcut || 'mod+.');
     this.activeId = options.activeId || this.scenarios[0].id;
     this.label = options.label || 'Scenarios';
 
@@ -108,7 +129,7 @@
     document.addEventListener('keydown', this._onKeydown);
 
     if (options.mount !== false) {
-      document.body.appendChild(this.root);
+      this.mount();
     }
 
     if (options.startOpen) this.expand();
@@ -177,6 +198,11 @@
     this.panel = panel;
     this.trigger = trigger;
     this.list = list;
+  };
+
+  Eaves.prototype.mount = function () {
+    document.body.appendChild(this.root);
+    return this;
   };
 
   Eaves.prototype.isOpen = function () {
