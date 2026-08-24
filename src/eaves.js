@@ -1,6 +1,6 @@
 /*!
  * Eaves — a hideable control panel for coded usability-test prototypes.
- * No dependencies. Drop it in with a <script> tag or `npm install eaves`.
+ * No dependencies. Drop it in with a <script> tag or `npm install eaves-panel`.
  * https://github.com/ommakes/eaves
  * MIT License
  */

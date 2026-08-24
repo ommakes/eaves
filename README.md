@@ -13,7 +13,7 @@ When you build a working prototype for a moderated usability test — in Cursor,
 No build step, no dependencies. Drop the script in and initialize it.
 
 ```html
-<script src="https://unpkg.com/eaves/src/eaves.js"></script>
+<script src="https://unpkg.com/eaves-panel/src/eaves.js"></script>
 <script>
   Eaves.init({
     scenarios: [
@@ -31,11 +31,11 @@ No build step, no dependencies. Drop the script in and initialize it.
 Or via npm, if you're already bundling:
 
 ```bash
-npm install eaves
+npm install eaves-panel
 ```
 
 ```js
-import Eaves from 'eaves';
+import Eaves from 'eaves-panel';
 
 Eaves.init({ scenarios: [...], onSelect: (id) => { ... } });
 ```

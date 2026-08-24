@@ -1,5 +1,5 @@
 {
-  "name": "eaves",
+  "name": "eaves-panel",
   "version": "0.1.0",
   "description": "A hideable control panel for switching scenarios and variants in coded usability-test prototypes, without touching the UI you're testing.",
   "main": "src/eaves.js",
