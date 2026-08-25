@@ -22,6 +22,7 @@
     '.eaves-root[data-position="bottom-left"]{bottom:16px;left:16px;}',
     '.eaves-root[data-position="top-right"]{top:16px;right:16px;}',
     '.eaves-root[data-position="top-left"]{top:16px;left:16px;}',
+    '.eaves-root.eaves-hidden{display:none;}',
     '.eaves-trigger{width:40px;height:40px;border-radius:50%;background:#18181b;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:transform .15s ease;padding:0;}',
     '.eaves-trigger:hover{transform:scale(1.05);}',
     '.eaves-trigger:active{transform:scale(.96);}',
@@ -88,14 +89,14 @@
       e.altKey === combo.alt;
   }
 
-  function shortcutLabel(combo) {
+  function shortcutLabel(combo, verb) {
     var parts = [];
     if (combo.meta) parts.push(isApplePlatform() ? '⌘' : 'Win');
     if (combo.ctrl) parts.push('Ctrl');
     if (combo.shift) parts.push('Shift');
     if (combo.alt) parts.push('Alt');
     parts.push(combo.key === '.' ? '.' : combo.key.toUpperCase());
-    return parts.join(' + ') + ' to toggle';
+    return parts.join(' + ') + ' to ' + (verb || 'toggle');
   }
 
   // Roofline glyph — keeps the eaves metaphor in the trigger itself.
@@ -114,14 +115,21 @@
     this.onSelect = options.onSelect || function () {};
     this.position = options.position || 'bottom-right';
     this.shortcut = parseShortcut(options.shortcut || 'mod+.');
+    this.hideShortcut = parseShortcut(options.hideShortcut || 'mod+shift+h');
     this.activeId = options.activeId || this.scenarios[0].id;
     this.label = options.label || 'Scenarios';
 
     injectStyles();
     this._build();
     this._onKeydown = function (e) {
+      if (matchesShortcut(e, self.hideShortcut)) {
+        e.preventDefault();
+        if (self.isHidden()) { self.show(); } else { self.hide(); }
+        return;
+      }
       if (matchesShortcut(e, self.shortcut)) {
         e.preventDefault();
+        if (self.isHidden()) { self.show(); }
         self.toggle();
         return;
       }
@@ -191,7 +199,7 @@
 
     var footer = document.createElement('div');
     footer.className = 'eaves-footer';
-    footer.textContent = shortcutLabel(this.shortcut) + ' · Esc to close';
+    footer.textContent = shortcutLabel(this.shortcut) + ' · ' + shortcutLabel(this.hideShortcut, 'hide') + ' · Esc to close';
     panel.appendChild(footer);
 
     root.appendChild(panel);
@@ -210,6 +218,19 @@
 
   Eaves.prototype.isOpen = function () {
     return this.root.classList.contains('eaves-open');
+  };
+
+  Eaves.prototype.isHidden = function () {
+    return this.root.classList.contains('eaves-hidden');
+  };
+
+  Eaves.prototype.hide = function () {
+    this.collapse();
+    this.root.classList.add('eaves-hidden');
+  };
+
+  Eaves.prototype.show = function () {
+    this.root.classList.remove('eaves-hidden');
   };
 
   Eaves.prototype.expand = function () {
