@@ -57,9 +57,9 @@ See `/demo/index.html` for a working example.
 | `activeId` | string | first scenario | Which item starts selected. |
 | `startOpen` | boolean | `false` | Whether the panel starts expanded. |
 | `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet — call `.mount()` when you're ready. |
-| `comments` | boolean | `false` | Opt-in. Lets a facilitator pin private feedback for the designer directly on the prototype — see [Comments](#comments) below. |
+| `comments` | boolean | `true` | On by default. Lets a facilitator pin private feedback for the designer directly on the prototype — see [Comments](#comments) below. Pass `false` to get the plain scenario switcher with no Comments tab. |
 | `onComment` | `(comment) => void` | no-op | Fires as each comment is created — the recommended way to relay comments off the facilitator's own device (e.g. to a Slack webhook) when the prototype is on a shared or hosted link, not just a local build. |
-| `pinsShortcut` | string | `'mod+shift+m'` | Only active when `comments: true`. Toggles pin visibility on the prototype, independent of `hideShortcut` and of whether the panel itself is open — for when a participant is watching the screen but the panel needs to stay reachable. |
+| `pinsShortcut` | string | `'mod+shift+m'` | Ignored when `comments: false`. Toggles pin visibility on the prototype, independent of `hideShortcut` and of whether the panel itself is open — for when a participant is watching the screen but the panel needs to stay reachable. |
 
 Instance methods:
 
@@ -75,17 +75,19 @@ Instance methods:
 | `.select(id)` | Activate a scenario and fire `onSelect`. Unknown ids are ignored. |
 | `.mount()` | Attach to `document.body`. Only needed after `mount: false`. Returns the instance. |
 | `.destroy()` | Remove the panel and unbind the keyboard listener. |
-| `.addComment(text, opts?)` | Requires `comments: true`. Adds a comment to the current scenario; `opts.xPct`/`opts.yPct` (0–100) place a pin. Returns the comment, or `null` if `text` is empty. |
+| `.addComment(text, opts?)` | Adds a comment to the current scenario; `opts.xPct`/`opts.yPct` (0–100) place a pin. Returns the comment, or `null` if `text` is empty or `comments: false`. |
 | `.getComments(scenarioId?)` | Reads back stored comments as plain objects, optionally filtered to one scenario. |
 | `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
-| `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the panel itself untouched. Requires `comments: true`; a no-op otherwise. |
+| `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the panel itself untouched. A no-op when `comments: false`. |
 
 `Esc` also closes the panel while it's open.
 
 ## Comments
 
-Set `comments: true` and a "Comments" tab appears alongside Scenarios. Click **+ Add comment**, then click anywhere on the prototype to drop a numbered pin and write a note — the same click-to-annotate flow as leaving a comment in Figma. Pins are scoped to the scenario they were left on and stored in `localStorage`, keyed by position as a percentage of the page (`xPct`/`yPct`), so they stay lined up with the right spot even if the window is resized.
+On by default — a "Comments" tab sits alongside Scenarios out of the box. Click **+ Add comment**, then click anywhere on the prototype to drop a numbered pin and write a note — the same click-to-annotate flow as leaving a comment in Figma. Pins are scoped to the scenario they were left on and stored in `localStorage`, keyed by position as a percentage of the page (`xPct`/`yPct`), so they stay lined up with the right spot even if the window is resized.
+
+Don't need it? Pass `comments: false` and you get the plain scenario switcher, with no Comments tab, pin layer, or `localStorage` write — same as before this was the default.
 
 This is a facilitator-private notes layer, not a shared one — nothing here is visible to a test participant unless you show it to them, and there's no live sync between browsers. Two ways a comment gets to you:
 
@@ -93,7 +95,6 @@ This is a facilitator-private notes layer, not a shared one — nothing here is 
   ```js
   Eaves.init({
     scenarios: [ /* ... */ ],
-    comments: true,
     onComment: function (comment) {
       fetch('https://hooks.slack.com/services/…', {
         method: 'POST',
@@ -131,7 +132,7 @@ Pins themselves can be hidden independently of the panel — press `mod+shift+m`
 
 ## Status
 
-Early — v0.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.2. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the trigger button still works.
 

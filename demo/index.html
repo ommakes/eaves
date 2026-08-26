@@ -47,7 +47,7 @@
     window.eaves = Eaves.init({
       label: 'Scenarios',
       shortcut: 'mod+.',
-      comments: true,
+      // comments is on by default — pass comments: false to turn it off
       scenarios: [
         { id: 'happy', label: 'Happy path', description: 'COI generates normally' },
         { id: 'error', label: 'Error state', description: 'Incomplete policy on file' },

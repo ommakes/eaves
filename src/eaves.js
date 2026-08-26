@@ -198,7 +198,7 @@
     this.hideShortcut = parseShortcut(options.hideShortcut || 'mod+shift+h');
     this.activeId = options.activeId || this.scenarios[0].id;
     this.label = options.label || 'Scenarios';
-    this.comments = options.comments === true;
+    this.comments = options.comments !== false;
     this.onComment = options.onComment || function () {};
     this.commentsData = this.comments ? loadComments() : [];
     this.pinsShortcut = this.comments ? parseShortcut(options.pinsShortcut || 'mod+shift+m') : null;
