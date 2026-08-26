@@ -14,6 +14,7 @@
   'use strict';
 
   var STYLE_ID = 'eaves-styles';
+  var COMMENTS_KEY = 'eaves-comments';
   var instanceCount = 0;
 
   var CSS = [
@@ -38,8 +39,59 @@
     '.eaves-item:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
     '.eaves-item[data-active="true"]{background:#3f3f46;font-weight:600;}',
     '.eaves-item-desc{display:block;font-size:11px;color:#a1a1aa;font-weight:400;margin-top:1px;}',
-    '.eaves-footer{border-top:1px solid #27272a;margin-top:6px;padding-top:6px;font-size:11px;color:#71717a;padding-left:8px;}'
+    '.eaves-footer{border-top:1px solid #27272a;margin-top:6px;padding-top:6px;font-size:11px;color:#71717a;padding-left:8px;}',
+    '.eaves-tabs{display:flex;gap:4px;padding:0 0 8px;}',
+    '.eaves-tab{flex:1;background:none;border:none;color:#a1a1aa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:6px 4px;border-radius:6px;cursor:pointer;font-family:inherit;transition:background .15s ease,color .15s ease;}',
+    '.eaves-tab:hover{background:#27272a;color:#f4f4f5;}',
+    '.eaves-tab:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
+    '.eaves-tab[data-active="true"]{background:#3f3f46;color:#f4f4f5;}',
+    '.eaves-panel[data-tab="scenarios"] .eaves-comments-section{display:none;}',
+    '.eaves-panel[data-tab="comments"] .eaves-list{display:none;}',
+    '.eaves-add-comment{display:block;width:100%;text-align:left;background:#27272a;border:none;color:#f4f4f5;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;margin-bottom:6px;transition:background .15s ease;}',
+    '.eaves-add-comment:hover{background:#3f3f46;}',
+    '.eaves-add-comment:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
+    '.eaves-add-comment[data-active="true"]{background:#60a5fa;color:#18181b;}',
+    '.eaves-comment-row{display:block;width:100%;text-align:left;background:none;border:none;color:#f4f4f5;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:12.5px;font-family:inherit;transition:background .15s ease;}',
+    '.eaves-comment-row:hover{background:#27272a;}',
+    '.eaves-comment-row:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
+    '.eaves-comment-num{color:#60a5fa;font-weight:600;margin-right:4px;}',
+    '.eaves-comment-empty{font-size:12px;color:#71717a;padding:6px 8px;}',
+    '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
+    '.eaves-pin{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#60a5fa;border:2px solid #18181b;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .15s ease;}',
+    '.eaves-pin:hover{transform:scale(1.15);}',
+    '.eaves-pin:focus-visible{outline:2px solid #f4f4f5;outline-offset:2px;}',
+    '.eaves-pin span{color:#18181b;font-size:10px;font-weight:700;}',
+    '.eaves-pin.eaves-pin-flash{animation:eaves-pin-flash .6s ease;}',
+    '@keyframes eaves-pin-flash{0%,100%{transform:scale(1);}30%{transform:scale(1.5);}}',
+    '.eaves-composer{position:absolute;z-index:2147483000;background:#18181b;color:#f4f4f5;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:8px;width:220px;box-sizing:border-box;pointer-events:auto;}',
+    '.eaves-composer textarea{width:100%;min-height:60px;background:#27272a;color:#f4f4f5;border:1px solid #3f3f46;border-radius:6px;padding:6px 8px;font-size:12.5px;font-family:inherit;resize:vertical;box-sizing:border-box;}',
+    '.eaves-composer textarea:focus-visible{outline:2px solid #60a5fa;outline-offset:1px;}',
+    '.eaves-composer-actions{display:flex;gap:6px;margin-top:6px;justify-content:flex-end;}',
+    '.eaves-composer-btn{background:none;border:none;color:#a1a1aa;font-size:12px;font-family:inherit;padding:4px 8px;border-radius:6px;cursor:pointer;transition:background .15s ease,color .15s ease;}',
+    '.eaves-composer-btn:hover{background:#27272a;color:#f4f4f5;}',
+    '.eaves-composer-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
+    '.eaves-composer-btn[data-primary="true"]{background:#60a5fa;color:#18181b;}',
+    '.eaves-composer-btn[data-primary="true"]:hover{background:#7db8fb;}',
+    'body.eaves-placing,body.eaves-placing *{cursor:crosshair !important;}'
   ].join('');
+
+  function loadComments() {
+    try {
+      var raw = window.localStorage.getItem(COMMENTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveComments(data) {
+    try {
+      window.localStorage.setItem(COMMENTS_KEY, JSON.stringify(data));
+    } catch (e) {
+      // localStorage unavailable (private mode, quota, disabled) — comments
+      // stay in-memory for this session instead of failing the whole widget.
+    }
+  }
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -118,6 +170,9 @@
     this.hideShortcut = parseShortcut(options.hideShortcut || 'mod+shift+h');
     this.activeId = options.activeId || this.scenarios[0].id;
     this.label = options.label || 'Scenarios';
+    this.comments = options.comments === true;
+    this.onComment = options.onComment || function () {};
+    this.commentsData = this.comments ? loadComments() : [];
 
     injectStyles();
     this._build();
@@ -138,6 +193,15 @@
       }
     };
     document.addEventListener('keydown', this._onKeydown);
+
+    if (this.comments) {
+      var resizeTimer;
+      this._onResize = function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () { self._renderPins(); }, 100);
+      };
+      window.addEventListener('resize', this._onResize);
+    }
 
     if (options.mount !== false) {
       this.mount();
@@ -164,11 +228,38 @@
 
     var panel = document.createElement('div');
     panel.className = 'eaves-panel';
+    panel.setAttribute('data-tab', 'scenarios');
 
     var header = document.createElement('div');
     header.className = 'eaves-header';
     header.textContent = this.label;
     panel.appendChild(header);
+
+    if (this.comments) {
+      var tabs = document.createElement('div');
+      tabs.className = 'eaves-tabs';
+
+      var scenariosTab = document.createElement('button');
+      scenariosTab.type = 'button';
+      scenariosTab.className = 'eaves-tab';
+      scenariosTab.textContent = 'Scenarios';
+      scenariosTab.setAttribute('data-active', 'true');
+      scenariosTab.addEventListener('click', function () { self._setTab('scenarios'); });
+
+      var commentsTab = document.createElement('button');
+      commentsTab.type = 'button';
+      commentsTab.className = 'eaves-tab';
+      commentsTab.textContent = 'Comments';
+      commentsTab.setAttribute('data-active', 'false');
+      commentsTab.addEventListener('click', function () { self._setTab('comments'); });
+
+      tabs.appendChild(scenariosTab);
+      tabs.appendChild(commentsTab);
+      panel.appendChild(tabs);
+
+      this.scenariosTab = scenariosTab;
+      this.commentsTab = commentsTab;
+    }
 
     var list = document.createElement('div');
     list.className = 'eaves-list';
@@ -197,6 +288,28 @@
 
     panel.appendChild(list);
 
+    if (this.comments) {
+      var commentsSection = document.createElement('div');
+      commentsSection.className = 'eaves-comments-section';
+
+      var addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'eaves-add-comment';
+      addBtn.textContent = '+ Add comment';
+      addBtn.setAttribute('data-active', 'false');
+      addBtn.addEventListener('click', function () { self._togglePlacing(); });
+
+      var commentsList = document.createElement('div');
+      commentsList.className = 'eaves-comments-list';
+
+      commentsSection.appendChild(addBtn);
+      commentsSection.appendChild(commentsList);
+      panel.appendChild(commentsSection);
+
+      this.addCommentBtn = addBtn;
+      this.commentsList = commentsList;
+    }
+
     var footer = document.createElement('div');
     footer.className = 'eaves-footer';
     footer.textContent = shortcutLabel(this.shortcut) + ' · ' + shortcutLabel(this.hideShortcut, 'hide') + ' · Esc to close';
@@ -209,10 +322,19 @@
     this.panel = panel;
     this.trigger = trigger;
     this.list = list;
+
+    if (this.comments) {
+      var pinLayer = document.createElement('div');
+      pinLayer.className = 'eaves-pin-layer';
+      this.pinLayer = pinLayer;
+      this._renderPins();
+      this._renderCommentsList();
+    }
   };
 
   Eaves.prototype.mount = function () {
     document.body.appendChild(this.root);
+    if (this.pinLayer) document.body.appendChild(this.pinLayer);
     return this;
   };
 
@@ -254,11 +376,213 @@
       var isActive = items[i].getAttribute('data-scenario-id') === id;
       items[i].setAttribute('data-active', isActive ? 'true' : 'false');
     }
+    if (this.comments) {
+      this._renderPins();
+      this._renderCommentsList();
+    }
     this.onSelect(id, scenario);
+  };
+
+  Eaves.prototype._setTab = function (tab) {
+    this.panel.setAttribute('data-tab', tab);
+    this.scenariosTab.setAttribute('data-active', tab === 'scenarios' ? 'true' : 'false');
+    this.commentsTab.setAttribute('data-active', tab === 'comments' ? 'true' : 'false');
+  };
+
+  Eaves.prototype._renderPins = function () {
+    if (!this.pinLayer) return;
+    var self = this;
+    this.pinLayer.innerHTML = '';
+    this.getComments(this.activeId).forEach(function (comment, index) {
+      if (typeof comment.xPct !== 'number' || typeof comment.yPct !== 'number') return;
+      var pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'eaves-pin';
+      pin.setAttribute('data-comment-id', comment.id);
+      pin.setAttribute('aria-label', 'Comment ' + (index + 1) + ': ' + comment.text);
+      pin.style.left = (comment.xPct / 100 * document.documentElement.scrollWidth) + 'px';
+      pin.style.top = (comment.yPct / 100 * document.documentElement.scrollHeight) + 'px';
+
+      var num = document.createElement('span');
+      num.textContent = String(index + 1);
+      pin.appendChild(num);
+
+      pin.addEventListener('click', function () { self._flashPin(comment.id); });
+      self.pinLayer.appendChild(pin);
+    });
+  };
+
+  Eaves.prototype._flashPin = function (commentId) {
+    if (!this.pinLayer) return;
+    var pin = this.pinLayer.querySelector('[data-comment-id="' + commentId + '"]');
+    if (!pin) return;
+    pin.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    pin.classList.add('eaves-pin-flash');
+    setTimeout(function () { pin.classList.remove('eaves-pin-flash'); }, 600);
+  };
+
+  Eaves.prototype._renderCommentsList = function () {
+    if (!this.commentsList) return;
+    var self = this;
+    this.commentsList.innerHTML = '';
+    var scenarioComments = this.getComments(this.activeId);
+
+    if (!scenarioComments.length) {
+      var empty = document.createElement('div');
+      empty.className = 'eaves-comment-empty';
+      empty.textContent = 'No comments on this scenario yet.';
+      this.commentsList.appendChild(empty);
+      return;
+    }
+
+    scenarioComments.forEach(function (comment, index) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'eaves-comment-row';
+
+      var num = document.createElement('span');
+      num.className = 'eaves-comment-num';
+      num.textContent = '#' + (index + 1);
+      row.appendChild(num);
+      row.appendChild(document.createTextNode(comment.text));
+
+      row.addEventListener('click', function () { self._flashPin(comment.id); });
+      self.commentsList.appendChild(row);
+    });
+  };
+
+  Eaves.prototype._togglePlacing = function () {
+    if (this._placing) { this._cancelPlacing(); } else { this._startPlacing(); }
+  };
+
+  Eaves.prototype._startPlacing = function () {
+    var self = this;
+    this._placing = true;
+    this.addCommentBtn.setAttribute('data-active', 'true');
+    this.addCommentBtn.textContent = 'Click the prototype…';
+    document.body.classList.add('eaves-placing');
+
+    this._onPlacingClick = function (e) {
+      if (self.root.contains(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      self._cancelPlacing();
+      self._openComposer(e.pageX, e.pageY);
+    };
+    document.addEventListener('click', this._onPlacingClick, true);
+  };
+
+  Eaves.prototype._cancelPlacing = function () {
+    this._placing = false;
+    this.addCommentBtn.setAttribute('data-active', 'false');
+    this.addCommentBtn.textContent = '+ Add comment';
+    document.body.classList.remove('eaves-placing');
+    if (this._onPlacingClick) {
+      document.removeEventListener('click', this._onPlacingClick, true);
+      this._onPlacingClick = null;
+    }
+  };
+
+  Eaves.prototype._openComposer = function (pageX, pageY) {
+    var self = this;
+    this._closeComposer();
+
+    var xPct = Math.max(0, Math.min(100, pageX / document.documentElement.scrollWidth * 100));
+    var yPct = Math.max(0, Math.min(100, pageY / document.documentElement.scrollHeight * 100));
+
+    var composer = document.createElement('div');
+    composer.className = 'eaves-composer';
+    composer.style.left = pageX + 'px';
+    composer.style.top = pageY + 'px';
+
+    var textarea = document.createElement('textarea');
+    textarea.placeholder = 'What should the designer know?';
+    composer.appendChild(textarea);
+
+    var actions = document.createElement('div');
+    actions.className = 'eaves-composer-actions';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'eaves-composer-btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', function () { self._closeComposer(); });
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'eaves-composer-btn';
+    saveBtn.setAttribute('data-primary', 'true');
+    saveBtn.textContent = 'Save';
+    saveBtn.addEventListener('click', function () {
+      self.addComment(textarea.value, { xPct: xPct, yPct: yPct });
+      self._closeComposer();
+    });
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    composer.appendChild(actions);
+
+    composer.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); self._closeComposer(); }
+    });
+
+    this.pinLayer.appendChild(composer);
+    this.composer = composer;
+    textarea.focus();
+  };
+
+  Eaves.prototype._closeComposer = function () {
+    if (this.composer && this.composer.parentNode) {
+      this.composer.parentNode.removeChild(this.composer);
+    }
+    this.composer = null;
+  };
+
+  Eaves.prototype.addComment = function (text, opts) {
+    if (!this.comments) return null;
+    opts = opts || {};
+    text = (text || '').trim();
+    if (!text) return null;
+
+    var comment = {
+      id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      scenarioId: this.activeId,
+      text: text,
+      xPct: typeof opts.xPct === 'number' ? opts.xPct : null,
+      yPct: typeof opts.yPct === 'number' ? opts.yPct : null,
+      createdAt: new Date().toISOString()
+    };
+
+    this.commentsData.push(comment);
+    this._saveComments();
+    this._renderPins();
+    this._renderCommentsList();
+    this.onComment(comment);
+    return comment;
+  };
+
+  Eaves.prototype.getComments = function (scenarioId) {
+    if (!scenarioId) return this.commentsData.slice();
+    return this.commentsData.filter(function (c) { return c.scenarioId === scenarioId; });
+  };
+
+  Eaves.prototype.clearComments = function () {
+    this.commentsData = [];
+    this._saveComments();
+    this._renderPins();
+    this._renderCommentsList();
+  };
+
+  Eaves.prototype._saveComments = function () {
+    saveComments(this.commentsData);
   };
 
   Eaves.prototype.destroy = function () {
     document.removeEventListener('keydown', this._onKeydown);
+    if (this._onResize) window.removeEventListener('resize', this._onResize);
+    if (this._onPlacingClick) document.removeEventListener('click', this._onPlacingClick, true);
+    document.body.classList.remove('eaves-placing');
+    if (this.pinLayer && this.pinLayer.parentNode) this.pinLayer.parentNode.removeChild(this.pinLayer);
     if (this.root.parentNode) this.root.parentNode.removeChild(this.root);
   };
 

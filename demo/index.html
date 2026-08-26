@@ -45,6 +45,7 @@
     Eaves.init({
       label: 'Scenarios',
       shortcut: 'mod+.',
+      comments: true,
       scenarios: [
         { id: 'happy', label: 'Happy path', description: 'COI generates normally' },
         { id: 'error', label: 'Error state', description: 'Incomplete policy on file' },
@@ -53,6 +54,9 @@
       onSelect: function (id) {
         title.textContent = content[id].title;
         body.textContent = content[id].body;
+      },
+      onComment: function (comment) {
+        console.log('New comment on ' + comment.scenarioId + ':', comment.text);
       }
     });
   </script>
