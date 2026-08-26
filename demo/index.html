@@ -42,7 +42,9 @@
       }
     };
 
-    Eaves.init({
+    // Kept on window so it's easy to poke at from the console —
+    // e.g. eaves.exportComments() or eaves.getComments().
+    window.eaves = Eaves.init({
       label: 'Scenarios',
       shortcut: 'mod+.',
       comments: true,

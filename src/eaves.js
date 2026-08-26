@@ -56,6 +56,10 @@
     '.eaves-comment-row:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
     '.eaves-comment-num{color:#60a5fa;font-weight:600;margin-right:4px;}',
     '.eaves-comment-empty{font-size:12px;color:#71717a;padding:6px 8px;}',
+    '.eaves-export-actions{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #27272a;}',
+    '.eaves-export-btn{flex:1;background:#27272a;border:none;color:#f4f4f5;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:6px 4px;border-radius:6px;cursor:pointer;font-family:inherit;transition:background .15s ease;}',
+    '.eaves-export-btn:hover{background:#3f3f46;}',
+    '.eaves-export-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
     '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
     '.eaves-pin{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#60a5fa;border:2px solid #18181b;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .15s ease;}',
     '.eaves-pin:hover{transform:scale(1.15);}',
@@ -91,6 +95,29 @@
       // localStorage unavailable (private mode, quota, disabled) — comments
       // stay in-memory for this session instead of failing the whole widget.
     }
+  }
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function formatTime(iso) {
+    var d = new Date(iso);
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+  }
+
+  function yamlString(value) {
+    return '"' + String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  }
+
+  // A comment starting a line with #, -, >, or ` could otherwise be
+  // misread as a heading, list item, blockquote, or code fence by a
+  // Markdown parser walking the export — escape those so free-text
+  // comments can't corrupt the template's structure.
+  function escapeMarkdownLines(text) {
+    return String(text).split('\n').map(function (line) {
+      return line.replace(/^(\s*)([#\-`>])/, '$1\\$2');
+    }).join('\n');
   }
 
   function injectStyles() {
@@ -302,8 +329,27 @@
       var commentsList = document.createElement('div');
       commentsList.className = 'eaves-comments-list';
 
+      var exportActions = document.createElement('div');
+      exportActions.className = 'eaves-export-actions';
+
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'eaves-export-btn';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', function () { self._copyComments(copyBtn); });
+
+      var downloadBtn = document.createElement('button');
+      downloadBtn.type = 'button';
+      downloadBtn.className = 'eaves-export-btn';
+      downloadBtn.textContent = 'Download';
+      downloadBtn.addEventListener('click', function () { self._downloadComments(); });
+
+      exportActions.appendChild(copyBtn);
+      exportActions.appendChild(downloadBtn);
+
       commentsSection.appendChild(addBtn);
       commentsSection.appendChild(commentsList);
+      commentsSection.appendChild(exportActions);
       panel.appendChild(commentsSection);
 
       this.addCommentBtn = addBtn;
@@ -571,6 +617,64 @@
     this._saveComments();
     this._renderPins();
     this._renderCommentsList();
+  };
+
+  Eaves.prototype._copyComments = function (button) {
+    var text = this.exportComments();
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+    navigator.clipboard.writeText(text).then(function () {
+      button.textContent = 'Copied!';
+      setTimeout(function () { button.textContent = 'Copy'; }, 1200);
+    }, function () {
+      // Clipboard write can be denied (insecure origin, no permission) —
+      // the Download button stays as a fallback, so fail quietly here.
+    });
+  };
+
+  Eaves.prototype._downloadComments = function () {
+    var blob = new Blob([this.exportComments()], { type: 'text/markdown' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'eaves-comments-' + new Date().toISOString().slice(0, 10) + '.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  Eaves.prototype.exportComments = function () {
+    var self = this;
+    var lines = [];
+
+    lines.push('---');
+    lines.push('source: ' + yamlString((typeof document !== 'undefined' && document.title) || 'Eaves prototype'));
+    lines.push('exported: ' + new Date().toISOString());
+    lines.push('tool: eaves');
+    lines.push('count: ' + this.commentsData.length);
+    lines.push('---');
+
+    this.scenarios.forEach(function (scenario) {
+      var scenarioComments = self.getComments(scenario.id);
+      if (!scenarioComments.length) return;
+
+      lines.push('');
+      lines.push('## ' + scenario.label);
+
+      scenarioComments.forEach(function (comment, index) {
+        var pin = (typeof comment.xPct === 'number' && typeof comment.yPct === 'number')
+          ? Math.round(comment.xPct) + '%, ' + Math.round(comment.yPct) + '%'
+          : '(none)';
+
+        lines.push('');
+        lines.push('### #' + (index + 1) + ' — ' + formatTime(comment.createdAt));
+        lines.push('- pin: ' + pin);
+        lines.push('');
+        lines.push(escapeMarkdownLines(comment.text));
+      });
+    });
+
+    return lines.join('\n');
   };
 
   Eaves.prototype._saveComments = function () {

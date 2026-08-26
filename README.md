@@ -76,6 +76,7 @@ Instance methods:
 | `.destroy()` | Remove the panel and unbind the keyboard listener. |
 | `.addComment(text, opts?)` | Requires `comments: true`. Adds a comment to the current scenario; `opts.xPct`/`opts.yPct` (0–100) place a pin. Returns the comment, or `null` if `text` is empty. |
 | `.getComments(scenarioId?)` | Reads back stored comments as plain objects, optionally filtered to one scenario. |
+| `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
 
 `Esc` also closes the panel while it's open.
@@ -99,7 +100,28 @@ This is a facilitator-private notes layer, not a shared one — nothing here is 
     }
   });
   ```
-- **`.getComments()`** reads everything back for you to export yourself, whenever you want a full-session dump rather than a live feed.
+- **Copy / Download**, in the Comments tab, both produce the same Markdown — every comment, grouped by scenario, in one file. The zero-setup fallback for a quick local session with no webhook configured:
+  ```markdown
+  ---
+  source: "Certificate of insurance prototype"
+  exported: 2026-08-25T03:42:10.000Z
+  tool: eaves
+  count: 2
+  ---
+
+  ## Error state
+
+  ### #1 — 03:38:12
+  - pin: 62%, 41%
+
+  The retry button copy reads as "cancel" — reword.
+
+  ### #2 — 03:39:04
+  - pin: (none)
+
+  Consider showing which policy is incomplete, not just "incomplete."
+  ```
+  `.exportComments()` returns this same string programmatically. A comment line starting with `#`, `-`, `>`, or `` ` `` is backslash-escaped in the export so free-text notes can't be mistaken for headings, lists, or code fences by anything parsing the file back.
 
 ## Status
 
@@ -107,7 +129,7 @@ Early — v0.1. Built for a single, common shape (a flat list of named scenarios
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the trigger button still works.
 
-Comments are newer still: pin placement, the Comments tab, `localStorage` persistence, and `onComment` all work today, but there's no built-in export yet — `.getComments()` gets you the raw data in the meantime. A Markdown export and a keyboard shortcut to hide pins independently of the rest of the panel are next.
+Comments are newer still: pin placement, the Comments tab, `localStorage` persistence, `onComment`, and Markdown export all work today. Still to come: a keyboard shortcut to hide pins independently of the rest of the panel, for when the panel itself needs to stay open while a participant is watching the screen.
 
 ## License
 
