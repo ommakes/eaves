@@ -57,6 +57,8 @@ See `/demo/index.html` for a working example.
 | `activeId` | string | first scenario | Which item starts selected. |
 | `startOpen` | boolean | `false` | Whether the panel starts expanded. |
 | `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet — call `.mount()` when you're ready. |
+| `comments` | boolean | `false` | Opt-in. Lets a facilitator pin private feedback for the designer directly on the prototype — see [Comments](#comments) below. |
+| `onComment` | `(comment) => void` | no-op | Fires as each comment is created — the recommended way to relay comments off the facilitator's own device (e.g. to a Slack webhook) when the prototype is on a shared or hosted link, not just a local build. |
 
 Instance methods:
 
@@ -72,14 +74,40 @@ Instance methods:
 | `.select(id)` | Activate a scenario and fire `onSelect`. Unknown ids are ignored. |
 | `.mount()` | Attach to `document.body`. Only needed after `mount: false`. Returns the instance. |
 | `.destroy()` | Remove the panel and unbind the keyboard listener. |
+| `.addComment(text, opts?)` | Requires `comments: true`. Adds a comment to the current scenario; `opts.xPct`/`opts.yPct` (0–100) place a pin. Returns the comment, or `null` if `text` is empty. |
+| `.getComments(scenarioId?)` | Reads back stored comments as plain objects, optionally filtered to one scenario. |
+| `.clearComments()` | Wipes all stored comments for this instance. |
 
 `Esc` also closes the panel while it's open.
+
+## Comments
+
+Set `comments: true` and a "Comments" tab appears alongside Scenarios. Click **+ Add comment**, then click anywhere on the prototype to drop a numbered pin and write a note — the same click-to-annotate flow as leaving a comment in Figma. Pins are scoped to the scenario they were left on and stored in `localStorage`, keyed by position as a percentage of the page (`xPct`/`yPct`), so they stay lined up with the right spot even if the window is resized.
+
+This is a facilitator-private notes layer, not a shared one — nothing here is visible to a test participant unless you show it to them, and there's no live sync between browsers. Two ways a comment gets to you:
+
+- **`onComment`** fires the instant a comment is saved, in the facilitator's own browser. If the prototype is on an internal hosted link rather than a build you're running locally, wire this to your own endpoint (a Slack webhook, an internal API) — this is the reliable path, since it doesn't depend on anyone remembering an extra step:
+  ```js
+  Eaves.init({
+    scenarios: [ /* ... */ ],
+    comments: true,
+    onComment: function (comment) {
+      fetch('https://hooks.slack.com/services/…', {
+        method: 'POST',
+        body: JSON.stringify({ text: comment.text + ' (' + comment.scenarioId + ')' })
+      });
+    }
+  });
+  ```
+- **`.getComments()`** reads everything back for you to export yourself, whenever you want a full-session dump rather than a live feed.
 
 ## Status
 
 Early — v0.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the trigger button still works.
+
+Comments are newer still: pin placement, the Comments tab, `localStorage` persistence, and `onComment` all work today, but there's no built-in export yet — `.getComments()` gets you the raw data in the meantime. A Markdown export and a keyboard shortcut to hide pins independently of the rest of the panel are next.
 
 ## License
 
