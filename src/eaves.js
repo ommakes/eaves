@@ -61,6 +61,7 @@
     '.eaves-export-btn:hover{background:#3f3f46;}',
     '.eaves-export-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:-2px;}',
     '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
+    '.eaves-pin-layer.eaves-pins-hidden{display:none;}',
     '.eaves-pin{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#60a5fa;border:2px solid #18181b;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;padding:0;transition:transform .15s ease;}',
     '.eaves-pin:hover{transform:scale(1.15);}',
     '.eaves-pin:focus-visible{outline:2px solid #f4f4f5;outline-offset:2px;}',
@@ -200,6 +201,7 @@
     this.comments = options.comments === true;
     this.onComment = options.onComment || function () {};
     this.commentsData = this.comments ? loadComments() : [];
+    this.pinsShortcut = this.comments ? parseShortcut(options.pinsShortcut || 'mod+shift+m') : null;
 
     injectStyles();
     this._build();
@@ -207,6 +209,11 @@
       if (matchesShortcut(e, self.hideShortcut)) {
         e.preventDefault();
         if (self.isHidden()) { self.show(); } else { self.hide(); }
+        return;
+      }
+      if (self.pinsShortcut && matchesShortcut(e, self.pinsShortcut)) {
+        e.preventDefault();
+        if (self.arePinsHidden()) { self.showPins(); } else { self.hidePins(); }
         return;
       }
       if (matchesShortcut(e, self.shortcut)) {
@@ -358,7 +365,9 @@
 
     var footer = document.createElement('div');
     footer.className = 'eaves-footer';
-    footer.textContent = shortcutLabel(this.shortcut) + ' · ' + shortcutLabel(this.hideShortcut, 'hide') + ' · Esc to close';
+    var footerText = shortcutLabel(this.shortcut) + ' · ' + shortcutLabel(this.hideShortcut, 'hide');
+    if (this.pinsShortcut) footerText += ' · ' + shortcutLabel(this.pinsShortcut, 'toggle pins');
+    footer.textContent = footerText + ' · Esc to close';
     panel.appendChild(footer);
 
     root.appendChild(panel);
@@ -504,6 +513,7 @@
   Eaves.prototype._startPlacing = function () {
     var self = this;
     this._placing = true;
+    this.showPins(); // the pin + composer about to be placed live in this layer — can't stay hidden mid-flow
     this.addCommentBtn.setAttribute('data-active', 'true');
     this.addCommentBtn.textContent = 'Click the prototype…';
     document.body.classList.add('eaves-placing');
@@ -617,6 +627,18 @@
     this._saveComments();
     this._renderPins();
     this._renderCommentsList();
+  };
+
+  Eaves.prototype.arePinsHidden = function () {
+    return !!this.pinLayer && this.pinLayer.classList.contains('eaves-pins-hidden');
+  };
+
+  Eaves.prototype.hidePins = function () {
+    if (this.pinLayer) this.pinLayer.classList.add('eaves-pins-hidden');
+  };
+
+  Eaves.prototype.showPins = function () {
+    if (this.pinLayer) this.pinLayer.classList.remove('eaves-pins-hidden');
   };
 
   Eaves.prototype._copyComments = function (button) {

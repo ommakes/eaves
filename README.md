@@ -59,6 +59,7 @@ See `/demo/index.html` for a working example.
 | `mount` | boolean | `true` | Set `false` to build the instance without attaching it to the DOM yet — call `.mount()` when you're ready. |
 | `comments` | boolean | `false` | Opt-in. Lets a facilitator pin private feedback for the designer directly on the prototype — see [Comments](#comments) below. |
 | `onComment` | `(comment) => void` | no-op | Fires as each comment is created — the recommended way to relay comments off the facilitator's own device (e.g. to a Slack webhook) when the prototype is on a shared or hosted link, not just a local build. |
+| `pinsShortcut` | string | `'mod+shift+m'` | Only active when `comments: true`. Toggles pin visibility on the prototype, independent of `hideShortcut` and of whether the panel itself is open — for when a participant is watching the screen but the panel needs to stay reachable. |
 
 Instance methods:
 
@@ -78,6 +79,7 @@ Instance methods:
 | `.getComments(scenarioId?)` | Reads back stored comments as plain objects, optionally filtered to one scenario. |
 | `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
+| `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the panel itself untouched. Requires `comments: true`; a no-op otherwise. |
 
 `Esc` also closes the panel while it's open.
 
@@ -123,13 +125,17 @@ This is a facilitator-private notes layer, not a shared one — nothing here is 
   ```
   `.exportComments()` returns this same string programmatically. A comment line starting with `#`, `-`, `>`, or `` ` `` is backslash-escaped in the export so free-text notes can't be mistaken for headings, lists, or code fences by anything parsing the file back.
 
+Pins themselves can be hidden independently of the panel — press `mod+shift+m` (or call `.hidePins()`), and every pin on the page disappears until you press it again or call `.showPins()`. Useful when a participant is looking at the screen but you still want the panel open to keep taking notes. Starting to place a new pin (via **+ Add comment**) always reveals pins first, so the click-to-place flow never lands invisibly.
+
+> **Note:** Chrome DevTools uses the same `Cmd/Ctrl+Shift+M` combo to toggle its device toolbar, but only while DevTools has focus — with DevTools closed, or focus back on the page, the shortcut reaches Eaves as normal. Override `pinsShortcut` if that collision matters for your workflow.
+
 ## Status
 
 Early — v0.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the trigger button still works.
 
-Comments are newer still: pin placement, the Comments tab, `localStorage` persistence, `onComment`, and Markdown export all work today. Still to come: a keyboard shortcut to hide pins independently of the rest of the panel, for when the panel itself needs to stay open while a participant is watching the screen.
+Comments are newer still: pin placement, the Comments tab, `localStorage` persistence, `onComment`, Markdown export, and hiding pins independently of the rest of the panel all work today.
 
 ## License
 
