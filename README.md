@@ -81,6 +81,7 @@ Instance methods:
 | `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
 | `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the bar itself untouched. A no-op when `comments: false`. |
+| `.hasScreenshotFolder()` | `true` once a folder is connected for auto-saved snapshots — see [Screenshots](#screenshots) below. |
 
 `Esc` also closes an open menu.
 
@@ -135,13 +136,24 @@ Pins themselves can be hidden independently of the bar — press `mod+shift+m` (
 
 > **Note:** Chrome DevTools uses the same `Cmd/Ctrl+Shift+M` combo to toggle its device toolbar, but only while DevTools has focus — with DevTools closed, or focus back on the page, the shortcut reaches Eaves as normal. Override `pinsShortcut` if that collision matters for your workflow.
 
+## Screenshots
+
+Click **Save screenshots to a folder…** in the Comments menu, pick a folder once, and from then on every new comment silently saves a snapshot of the page alongside it — no prompt per comment, no server, nothing to run. Only shows up when the browser supports it (Chrome, Edge, and other Chromium browsers — not Firefox or Safari), and it needs a secure context (`https://` or `localhost`).
+
+Two things worth knowing about how this actually works, since it's not what "screenshot" usually implies:
+
+- **It's a copy of the page's markup, not a photo of the screen.** There's no browser API that lets a page silently capture real pixels — that always requires an explicit "share your screen" prompt, no way around it. So instead, each snapshot is `document.documentElement.outerHTML` at the moment the pin gets placed, with a small static marker baked in at the same spot as the pin — a real, openable `.html` file, not an image.
+- **That means a few things don't come through**: text someone just typed into a form field on the prototype (the browser doesn't reflect it back into the HTML the same way), anything drawn on a `<canvas>` or playing in a `<video>`, and images/stylesheets loaded from a local dev server rather than a stable URL — those 404 once the snapshot is opened somewhere else, later. Assets on a CDN or bundled inline keep working fine.
+
+The folder connection itself doesn't persist across a page reload — that's deliberate, to avoid needing any storage beyond what's already used for comment text. `.hasScreenshotFolder()` tells you whether one's currently connected.
+
 ## Status
 
-Early — v0.3. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.4. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the bar's own click targets still work.
 
-Comments work today: pin placement, the Comments menu, click-to-select + Delete-key removal, `localStorage` persistence, `onComment`, Markdown export, and hiding pins independently of the rest of the bar.
+Comments work today: pin placement, the Comments menu, click-to-select + Delete-key removal, `localStorage` persistence, `onComment`, Markdown export, hiding pins independently of the rest of the bar, and auto-saved markup snapshots to a local folder (Chromium browsers only).
 
 ## License
 
