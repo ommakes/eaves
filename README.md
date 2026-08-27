@@ -51,8 +51,8 @@ See `/demo/index.html` for a working example.
 | `scenarios` | `{ id, label, description? }[]` | — | Required. What shows up in the panel. |
 | `onSelect` | `(id, scenario) => void` | no-op | Fires when a scenario is picked. |
 | `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | `'bottom-right'` | Corner to anchor to initially. Dragging the bar by its grip handle overrides this for the rest of the session. |
-| `shortcut` | string | `'mod+.'` | Keyboard combo to open/close the Scenarios menu. `mod` resolves to `Cmd` on macOS/iOS and `Ctrl` everywhere else. Pin a modifier explicitly with `meta`/`cmd`, `ctrl`, `shift`, or `alt` — e.g. `'ctrl+shift+k'`. |
-| `hideShortcut` | string | `'mod+shift+h'` | Keyboard combo that fully hides the bar itself, not just its menus — for a clean screen recording. Pressing `shortcut` while hidden reveals it again, so there's always a way back even if you forget this combo. |
+| `shortcut` | string | `'mod+shift+u'` | Keyboard combo to open/close the Scenarios menu. `mod` resolves to `Cmd` on macOS/iOS and `Ctrl` everywhere else. Pin a modifier explicitly with `meta`/`cmd`, `ctrl`, `shift`, or `alt` — e.g. `'ctrl+shift+k'`. |
+| `hideShortcut` | string | `'mod+shift+y'` | Keyboard combo that fully hides the bar itself, not just its menus — for a clean screen recording. Pressing `shortcut` while hidden reveals it again, so there's always a way back even if you forget this combo. |
 | `label` | string | `'Scenarios'` | Label on the Scenarios button in the bar. |
 | `activeId` | string | first scenario | Which item starts selected. |
 | `startOpen` | boolean | `false` | Whether the Scenarios menu starts open. |
@@ -83,6 +83,8 @@ Instance methods:
 | `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the bar itself untouched. A no-op when `comments: false`. |
 
 `Esc` also closes an open menu.
+
+Both `shortcut` and `hideShortcut` default to letters, not punctuation like the old `mod+.` — checked against Chrome's and Cursor/VS Code's default keybindings so they don't fight your editor's muscle memory while you're building the prototype. `pinsShortcut` is the one exception: after checking every remaining letter, `M` is the least-bad option left (see the DevTools note below) — everything else was either destructive (`R` hard-reloads the page, `W` closes the browser window, `Q` signs a ChromeOS user out) or a heavily-used Cursor/VS&nbsp;Code command (`A` opens Cursor's own Agents panel, `S`/`F`/`Z`/`L` are constant-use editing shortcuts). All three are still just options — override any of them per project.
 
 ## Comments
 

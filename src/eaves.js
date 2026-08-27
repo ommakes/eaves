@@ -204,8 +204,8 @@
     this.scenarios = options.scenarios;
     this.onSelect = options.onSelect || function () {};
     this.position = options.position || 'bottom-right';
-    this.shortcut = parseShortcut(options.shortcut || 'mod+.');
-    this.hideShortcut = parseShortcut(options.hideShortcut || 'mod+shift+h');
+    this.shortcut = parseShortcut(options.shortcut || 'mod+shift+u');
+    this.hideShortcut = parseShortcut(options.hideShortcut || 'mod+shift+y');
     this.activeId = options.activeId || this.scenarios[0].id;
     this.label = options.label || 'Scenarios';
     this.comments = options.comments !== false;
