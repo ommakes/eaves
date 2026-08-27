@@ -56,6 +56,7 @@
     '.eaves-popover-add svg{width:14px;height:14px;}',
     '.eaves-popover-export{display:flex;gap:4px;margin-top:4px;}',
     '.eaves-popover-export .eaves-popover-add{margin-top:0;flex:1;font-size:11px;text-transform:uppercase;letter-spacing:.03em;}',
+    '.eaves-popover-folder{font-size:11px;}',
     '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
     '.eaves-pin-layer.eaves-pins-hidden{display:none;}',
     '.eaves-pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;background:#fff;border:none;border-radius:16px 16px 16px 0;cursor:pointer;pointer-events:auto;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s ease;}',
@@ -117,6 +118,20 @@
     return String(text).split('\n').map(function (line) {
       return line.replace(/^(\s*)([#\-`>])/, '$1\\$2');
     }).join('\n');
+  }
+
+  // A plain, inert copy of the live pin's look — no JS, so it still renders
+  // correctly when the snapshot is opened stand-alone later, with no eaves.js attached.
+  function buildSnapshotMarkerHtml(xPct, yPct, number) {
+    var left = xPct / 100 * document.documentElement.scrollWidth;
+    var top = yPct / 100 * document.documentElement.scrollHeight;
+    return '<div style="position:absolute;left:' + left + 'px;top:' + top + 'px;' +
+      'width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;' +
+      'background:#fff;border-radius:16px 16px 16px 0;box-shadow:0 2px 6px rgba(0,0,0,.35);' +
+      'z-index:2147483000;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">' +
+      '<div style="width:100%;height:100%;border-radius:50%;background:#ffde69;' +
+      'display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#0f0f0f;">' +
+      number + '</div></div>';
   }
 
   function injectStyles() {
@@ -214,6 +229,7 @@
     this.pinsShortcut = this.comments ? parseShortcut(options.pinsShortcut || 'mod+shift+m') : null;
     this.openMenu = null;
     this.activeCommentId = null;
+    this.snapshotDir = null;
 
     injectStyles();
     this._build();
@@ -370,6 +386,18 @@
       exportRow.appendChild(copyBtn);
       exportRow.appendChild(downloadBtn);
       commentsPopover.appendChild(exportRow);
+
+      // File System Access is Chromium-only (no Firefox/Safari) and needs a
+      // secure context — feature-detect rather than showing a button that can't work.
+      if (typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function') {
+        var folderBtn = document.createElement('button');
+        folderBtn.type = 'button';
+        folderBtn.className = 'eaves-popover-add eaves-popover-folder';
+        folderBtn.textContent = 'Save screenshots to a folder…';
+        folderBtn.addEventListener('click', function () { self._chooseSnapshotFolder(folderBtn); });
+        commentsPopover.appendChild(folderBtn);
+        this.folderBtn = folderBtn;
+      }
     }
 
     this.root = root;
@@ -671,12 +699,26 @@
     }
   };
 
+  // A copy of the page's own markup at this instant, not a real screenshot — see
+  // README for what that does and doesn't capture (typed-but-unsaved form input,
+  // <canvas>/<video> content, and locally-hosted assets don't come through).
+  // No permission prompt: this only reads content the page already has access to.
+  Eaves.prototype._captureSnapshot = function (xPct, yPct, number) {
+    var html = document.documentElement.outerHTML;
+    var marker = buildSnapshotMarkerHtml(xPct, yPct, number);
+    return html.indexOf('</body>') > -1 ? html.replace('</body>', marker + '</body>') : html + marker;
+  };
+
   Eaves.prototype._openComposer = function (pageX, pageY) {
     var self = this;
     this._closeComposer();
 
     var xPct = Math.max(0, Math.min(100, pageX / document.documentElement.scrollWidth * 100));
     var yPct = Math.max(0, Math.min(100, pageY / document.documentElement.scrollHeight * 100));
+    if (this.snapshotDir) {
+      var prospectiveNumber = this.getComments(this.activeId).length + 1;
+      this._pendingSnapshot = this._captureSnapshot(xPct, yPct, prospectiveNumber);
+    }
 
     var composer = document.createElement('div');
     composer.className = 'eaves-composer';
@@ -702,7 +744,10 @@
     saveBtn.setAttribute('data-primary', 'true');
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', function () {
-      self.addComment(textarea.value, { xPct: xPct, yPct: yPct });
+      var comment = self.addComment(textarea.value, { xPct: xPct, yPct: yPct });
+      if (comment && self.snapshotDir && self._pendingSnapshot) {
+        self._writeSnapshot(comment, self._pendingSnapshot);
+      }
       self._closeComposer();
     });
 
@@ -724,6 +769,7 @@
       this.composer.parentNode.removeChild(this.composer);
     }
     this.composer = null;
+    this._pendingSnapshot = null;
   };
 
   Eaves.prototype.addComment = function (text, opts) {
@@ -784,6 +830,34 @@
 
   Eaves.prototype.showPins = function () {
     if (this.pinLayer) this.pinLayer.classList.remove('eaves-pins-hidden');
+  };
+
+  Eaves.prototype.hasScreenshotFolder = function () {
+    return !!this.snapshotDir;
+  };
+
+  Eaves.prototype._chooseSnapshotFolder = function (button) {
+    var self = this;
+    window.showDirectoryPicker({ mode: 'readwrite' }).then(function (handle) {
+      self.snapshotDir = handle;
+      if (button) button.textContent = '📁 ' + handle.name;
+    }, function () {
+      // Picker dismissed/denied — fail quietly, same as the Copy button's clipboard-deny path.
+    });
+  };
+
+  Eaves.prototype._writeSnapshot = function (comment, html) {
+    var dir = this.snapshotDir;
+    if (!dir) return;
+    var filename = 'eaves-' + comment.scenarioId + '-' + comment.id + '.html';
+    dir.getFileHandle(filename, { create: true }).then(function (fileHandle) {
+      return fileHandle.createWritable();
+    }).then(function (writable) {
+      return writable.write(html).then(function () { return writable.close(); });
+    }).catch(function () {
+      // Folder permission revoked, disk full, handle stale after a reload, etc. —
+      // the comment itself already saved fine; the screenshot is a best-effort extra.
+    });
   };
 
   Eaves.prototype._copyComments = function (button) {
