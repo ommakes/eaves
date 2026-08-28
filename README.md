@@ -42,6 +42,10 @@ Eaves.init({ scenarios: [...], onSelect: (id) => { ... } });
 
 See `/demo/index.html` for a working example.
 
+### No code? Ask your AI agent
+
+If you're building the prototype in Cursor, Claude Code, or another AI coding agent, you don't have to write the `Eaves.init()` call by hand — describe the scenarios you want ("wire up Eaves with a happy path, an error state, and an empty state") and let the agent read the API below and wire it in for you.
+
 ## API
 
 `Eaves.init(options)` returns an instance.
