@@ -45,10 +45,19 @@
     '.eaves-popover-row{display:flex;align-items:center;gap:4px;width:100%;min-height:23px;padding:4px;background:none;border:none;color:#fff;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:6px;transition:background .15s ease;}',
     '.eaves-popover-row:hover{background:rgba(255,255,255,.06);}',
     '.eaves-popover-row:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
-    '.eaves-popover-row[data-active-comment="true"]{background:rgba(255,255,255,.12);}',
     '.eaves-popover-check{width:14px;height:14px;flex:none;color:#95c7ff;display:flex;align-items:center;justify-content:center;}',
     '.eaves-popover-num{width:14px;flex:none;color:#95c7ff;font-weight:600;text-align:center;}',
     '.eaves-popover-row-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '.eaves-popover-comment-row{display:flex;align-items:center;gap:2px;width:100%;}',
+    '.eaves-popover-comment-select{display:flex;align-items:center;gap:4px;flex:1;min-width:0;min-height:23px;padding:4px;background:none;border:none;color:#fff;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:6px;transition:background .15s ease;}',
+    '.eaves-popover-comment-select:hover{background:rgba(255,255,255,.06);}',
+    '.eaves-popover-comment-select:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
+    '.eaves-popover-comment-row[data-active-comment="true"] .eaves-popover-comment-select{background:rgba(255,255,255,.12);}',
+    '.eaves-popover-comment-actions{display:flex;gap:2px;flex:none;}',
+    '.eaves-popover-icon-btn{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;background:none;border:none;color:#9a9a9a;padding:0;border-radius:5px;cursor:pointer;transition:background .15s ease,color .15s ease;}',
+    '.eaves-popover-icon-btn:hover{background:rgba(255,255,255,.08);color:#fff;}',
+    '.eaves-popover-icon-btn:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
+    '.eaves-popover-icon-btn svg{width:13px;height:13px;}',
     '.eaves-popover-empty{font-size:12px;color:#8a8a8a;padding:6px 8px;}',
     '.eaves-popover-add{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:28px;background:rgba(255,255,255,.04);border:none;color:#f0f0f0;font-size:12px;font-weight:600;font-family:inherit;border-radius:6px;cursor:pointer;margin-top:4px;transition:background .15s ease;}',
     '.eaves-popover-add:hover{background:rgba(255,255,255,.08);}',
@@ -59,8 +68,9 @@
     '.eaves-popover-folder{font-size:11px;}',
     '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
     '.eaves-pin-layer.eaves-pins-hidden{display:none;}',
-    '.eaves-pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;background:#fff;border:none;border-radius:16px 16px 16px 0;cursor:pointer;pointer-events:auto;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s ease;}',
+    '.eaves-pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;background:#fff;border:none;border-radius:16px 16px 16px 0;cursor:grab;touch-action:none;pointer-events:auto;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s ease;}',
     '.eaves-pin:hover{transform:scale(1.08);}',
+    '.eaves-pin.eaves-pin-dragging{cursor:grabbing;transition:none;transform:scale(1.08);}',
     '.eaves-pin:focus-visible{outline:2px solid #95c7ff;outline-offset:2px;}',
     '.eaves-pin-inner{width:100%;height:100%;border-radius:50%;background:#ffde69;display:flex;align-items:center;justify-content:center;}',
     '.eaves-pin-inner span{color:#0f0f0f;font-size:12px;font-weight:600;}',
@@ -208,6 +218,8 @@
   var CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
   var CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
   var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
+  var EDIT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+  var TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 
   function Eaves(options) {
     options = options || {};
@@ -612,12 +624,90 @@
       inner.appendChild(num);
       pin.appendChild(inner);
 
+      // A real drag (moved past the threshold) is handled entirely in
+      // _initPinDrag's pointerup — no 'click' event follows a drag whose
+      // pointerup lands away from where the pointerdown started, so this
+      // listener only ever sees genuine clicks (mouse, touch tap, or
+      // keyboard activation) and can select unconditionally.
       pin.addEventListener('click', function () {
         self._setActiveComment(comment.id);
         self._flashPin(comment.id);
       });
+      self._initPinDrag(pin);
       self.pinLayer.appendChild(pin);
     });
+  };
+
+  // Drag-to-move for an existing pin. A small movement threshold tells a
+  // real drag apart from a click that happens to wobble a pixel or two, so
+  // clicking a pin to select it still works via the pin's own click handler.
+  Eaves.prototype._initPinDrag = function (pin) {
+    var self = this;
+    var DRAG_THRESHOLD = 4;
+
+    pin.addEventListener('pointerdown', function (e) {
+      if (typeof e.button === 'number' && e.button !== 0) return;
+      if (self._placing) return;
+
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var moved = false;
+      var xPct = null, yPct = null;
+
+      try { pin.setPointerCapture(e.pointerId); } catch (err) { /* unsupported — drag still works via document fallback below */ }
+
+      var onMove = function (ev) {
+        var dx = ev.clientX - startX;
+        var dy = ev.clientY - startY;
+        if (!moved && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+          moved = true;
+          pin.classList.add('eaves-pin-dragging');
+        }
+        if (!moved) return;
+        e.preventDefault();
+        xPct = Math.max(0, Math.min(100, ev.pageX / document.documentElement.scrollWidth * 100));
+        yPct = Math.max(0, Math.min(100, ev.pageY / document.documentElement.scrollHeight * 100));
+        pin.style.left = (xPct / 100 * document.documentElement.scrollWidth) + 'px';
+        pin.style.top = (yPct / 100 * document.documentElement.scrollHeight) + 'px';
+      };
+
+      var onUp = function (ev) {
+        pin.removeEventListener('pointermove', onMove);
+        pin.removeEventListener('pointerup', onUp);
+        pin.removeEventListener('pointercancel', onCancel);
+        try { pin.releasePointerCapture(ev.pointerId); } catch (err) { /* no-op */ }
+        pin.classList.remove('eaves-pin-dragging');
+        if (moved && xPct !== null && yPct !== null) {
+          var id = pin.getAttribute('data-comment-id');
+          self.activeCommentId = id;
+          self.moveComment(id, xPct, yPct);
+          self._renderCommentsMenu();
+        }
+      };
+
+      var onCancel = function () {
+        pin.removeEventListener('pointermove', onMove);
+        pin.removeEventListener('pointerup', onUp);
+        pin.removeEventListener('pointercancel', onCancel);
+        pin.classList.remove('eaves-pin-dragging');
+      };
+
+      pin.addEventListener('pointermove', onMove);
+      pin.addEventListener('pointerup', onUp);
+      pin.addEventListener('pointercancel', onCancel);
+    });
+  };
+
+  // Updates where a comment's pin sits on the page — the programmatic
+  // counterpart to dragging its pin. Ignored if `id` doesn't match a comment.
+  Eaves.prototype.moveComment = function (id, xPct, yPct) {
+    var comment = this.commentsData.filter(function (c) { return c.id === id; })[0];
+    if (!comment) return false;
+    comment.xPct = Math.max(0, Math.min(100, xPct));
+    comment.yPct = Math.max(0, Math.min(100, yPct));
+    this._saveComments();
+    this._renderPins();
+    return true;
   };
 
   Eaves.prototype._flashPin = function (commentId) {
@@ -650,28 +740,75 @@
     }
 
     scenarioComments.forEach(function (comment, index) {
-      var row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'eaves-popover-row';
+      var row = document.createElement('div');
+      row.className = 'eaves-popover-comment-row';
       row.setAttribute('data-comment-id', comment.id);
       row.setAttribute('data-active-comment', comment.id === self.activeCommentId ? 'true' : 'false');
+
+      var selectBtn = document.createElement('button');
+      selectBtn.type = 'button';
+      selectBtn.className = 'eaves-popover-comment-select';
 
       var num = document.createElement('span');
       num.className = 'eaves-popover-num';
       num.textContent = String(index + 1);
-      row.appendChild(num);
+      selectBtn.appendChild(num);
 
       var text = document.createElement('span');
       text.className = 'eaves-popover-row-text';
       text.textContent = comment.text;
-      row.appendChild(text);
+      selectBtn.appendChild(text);
 
-      row.addEventListener('click', function () {
+      selectBtn.addEventListener('click', function () {
         self._setActiveComment(comment.id);
         self._flashPin(comment.id);
       });
+      row.appendChild(selectBtn);
+
+      var actions = document.createElement('div');
+      actions.className = 'eaves-popover-comment-actions';
+
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'eaves-popover-icon-btn';
+      editBtn.setAttribute('aria-label', 'Edit comment ' + (index + 1));
+      editBtn.innerHTML = EDIT_ICON;
+      editBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self._closeMenus();
+        self._editComment(comment);
+      });
+      actions.appendChild(editBtn);
+
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'eaves-popover-icon-btn';
+      deleteBtn.setAttribute('aria-label', 'Delete comment ' + (index + 1));
+      deleteBtn.innerHTML = TRASH_ICON;
+      deleteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        self.deleteComment(comment.id);
+      });
+      actions.appendChild(deleteBtn);
+
+      row.appendChild(actions);
       self.commentsList.appendChild(row);
     });
+  };
+
+  // Opens the composer prefilled with an existing comment's text, at its
+  // pin's position (or the viewport center for a comment with no pin).
+  Eaves.prototype._editComment = function (comment) {
+    var pageX, pageY;
+    if (typeof comment.xPct === 'number' && typeof comment.yPct === 'number') {
+      pageX = comment.xPct / 100 * document.documentElement.scrollWidth;
+      pageY = comment.yPct / 100 * document.documentElement.scrollHeight;
+    } else {
+      pageX = window.pageXOffset + window.innerWidth / 2;
+      pageY = window.pageYOffset + window.innerHeight / 2;
+    }
+    this.showPins();
+    this._openComposer(pageX, pageY, comment);
   };
 
   Eaves.prototype._startPlacing = function () {
@@ -709,13 +846,13 @@
     return html.indexOf('</body>') > -1 ? html.replace('</body>', marker + '</body>') : html + marker;
   };
 
-  Eaves.prototype._openComposer = function (pageX, pageY) {
+  Eaves.prototype._openComposer = function (pageX, pageY, editingComment) {
     var self = this;
     this._closeComposer();
 
     var xPct = Math.max(0, Math.min(100, pageX / document.documentElement.scrollWidth * 100));
     var yPct = Math.max(0, Math.min(100, pageY / document.documentElement.scrollHeight * 100));
-    if (this.snapshotDir) {
+    if (!editingComment && this.snapshotDir) {
       var prospectiveNumber = this.getComments(this.activeId).length + 1;
       this._pendingSnapshot = this._captureSnapshot(xPct, yPct, prospectiveNumber);
     }
@@ -727,16 +864,30 @@
 
     var textarea = document.createElement('textarea');
     textarea.placeholder = 'What should the designer know?';
+    if (editingComment) textarea.value = editingComment.text;
     composer.appendChild(textarea);
 
     var actions = document.createElement('div');
     actions.className = 'eaves-composer-actions';
+
+    if (editingComment) {
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'eaves-composer-btn';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function () {
+        self.deleteComment(editingComment.id);
+        self._closeComposer();
+      });
+      actions.appendChild(deleteBtn);
+    }
 
     var cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.className = 'eaves-composer-btn';
     cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', function () { self._closeComposer(); });
+    actions.appendChild(cancelBtn);
 
     var saveBtn = document.createElement('button');
     saveBtn.type = 'button';
@@ -744,15 +895,18 @@
     saveBtn.setAttribute('data-primary', 'true');
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', function () {
-      var comment = self.addComment(textarea.value, { xPct: xPct, yPct: yPct });
-      if (comment && self.snapshotDir && self._pendingSnapshot) {
-        self._writeSnapshot(comment, self._pendingSnapshot);
+      if (editingComment) {
+        self.editComment(editingComment.id, textarea.value);
+      } else {
+        var comment = self.addComment(textarea.value, { xPct: xPct, yPct: yPct });
+        if (comment && self.snapshotDir && self._pendingSnapshot) {
+          self._writeSnapshot(comment, self._pendingSnapshot);
+        }
       }
       self._closeComposer();
     });
-
-    actions.appendChild(cancelBtn);
     actions.appendChild(saveBtn);
+
     composer.appendChild(actions);
 
     composer.addEventListener('keydown', function (e) {
@@ -793,6 +947,21 @@
     this._renderPins();
     this._renderCommentsMenu();
     this.onComment(comment);
+    return comment;
+  };
+
+  // Updates an existing comment's text in place. A blank/whitespace-only
+  // text is ignored rather than clearing the comment — use deleteComment
+  // for that instead.
+  Eaves.prototype.editComment = function (id, text) {
+    var comment = this.commentsData.filter(function (c) { return c.id === id; })[0];
+    if (!comment) return null;
+    text = (text || '').trim();
+    if (!text) return null;
+    comment.text = text;
+    this._saveComments();
+    this._renderPins();
+    this._renderCommentsMenu();
     return comment;
   };
 
@@ -841,8 +1010,11 @@
     window.showDirectoryPicker({ mode: 'readwrite' }).then(function (handle) {
       self.snapshotDir = handle;
       if (button) button.textContent = '📁 ' + handle.name;
-    }, function () {
+    }, function (err) {
       // Picker dismissed/denied — fail quietly, same as the Copy button's clipboard-deny path.
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Eaves: screenshot folder was not selected.', err);
+      }
     });
   };
 
@@ -850,13 +1022,36 @@
     var dir = this.snapshotDir;
     if (!dir) return;
     var filename = 'eaves-' + comment.scenarioId + '-' + comment.id + '.html';
-    dir.getFileHandle(filename, { create: true }).then(function (fileHandle) {
+
+    // The readwrite permission granted when the folder was picked can lapse
+    // (a long-backgrounded tab, a reload that restored the handle from
+    // storage) without any visible sign — re-verifying it here, and
+    // re-requesting it if needed, is what was missing before: a lapsed
+    // permission made every write fail silently, with no way to tell why.
+    var ensurePermission = (typeof dir.queryPermission === 'function')
+      ? dir.queryPermission({ mode: 'readwrite' }).then(function (state) {
+          if (state === 'granted') return true;
+          if (typeof dir.requestPermission !== 'function') return false;
+          return dir.requestPermission({ mode: 'readwrite' }).then(function (requested) {
+            return requested === 'granted';
+          });
+        })
+      : Promise.resolve(true);
+
+    ensurePermission.then(function (granted) {
+      if (!granted) throw new Error('screenshot folder permission is not granted');
+      return dir.getFileHandle(filename, { create: true });
+    }).then(function (fileHandle) {
       return fileHandle.createWritable();
     }).then(function (writable) {
       return writable.write(html).then(function () { return writable.close(); });
-    }).catch(function () {
-      // Folder permission revoked, disk full, handle stale after a reload, etc. —
-      // the comment itself already saved fine; the screenshot is a best-effort extra.
+    }).catch(function (err) {
+      // Disk full, handle stale, permission denied, etc. — the comment
+      // itself already saved fine; the screenshot is a best-effort extra.
+      // Logged (not silent) so a failure is actually diagnosable.
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Eaves: could not save the screenshot for this comment.', err);
+      }
     });
   };
 
