@@ -82,6 +82,8 @@ Instance methods:
 | `.addComment(text, opts?)` | Adds a comment to the current scenario; `opts.xPct`/`opts.yPct` (0–100) place a pin. Returns the comment, or `null` if `text` is empty or `comments: false`. |
 | `.getComments(scenarioId?)` | Reads back stored comments as plain objects, optionally filtered to one scenario. |
 | `.deleteComment(id)` | Removes one comment by id. Returns `true` if a comment was removed, `false` if the id wasn't found. See [Comments](#comments) below for the click + Delete-key flow. |
+| `.editComment(id, text)` | Updates a comment's text in place. Returns the updated comment, or `null` if `id` doesn't match one or `text` is blank — a blank edit is ignored rather than clearing the comment, use `.deleteComment(id)` for that. |
+| `.moveComment(id, xPct, yPct)` | Repositions a comment's pin. Returns `true` if the comment was found and moved. The programmatic counterpart to dragging a pin — see [Comments](#comments) below. |
 | `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
 | `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the bar itself untouched. A no-op when `comments: false`. |
@@ -95,7 +97,11 @@ Both `shortcut` and `hideShortcut` default to letters, not punctuation like the 
 
 On by default — a **Comments** button sits next to **Scenarios** in the bar out of the box. Open it and click **+ Add**, then click anywhere on the prototype to drop a numbered pin and write a note — the same click-to-annotate flow as leaving a comment in Figma. Pins are scoped to the scenario they were left on and stored in `localStorage`, keyed by position as a percentage of the page (`xPct`/`yPct`), so they stay lined up with the right spot even if the window is resized.
 
-Revisit any comment two ways — click its number badge in the Comments menu, or click its pin directly on the page — either one scrolls to it, flashes it, and marks it **active** (a highlighted ring on the pin and its row). With a comment active, press **Delete** or **Backspace** to remove it — that only fires while a comment is actively selected and your focus isn't in a text field, so it can't accidentally eat a keystroke while you're typing somewhere else on the page. `.deleteComment(id)` does the same thing programmatically.
+Revisit any comment two ways — click its number badge in the Comments menu, or click its pin directly on the page — either one scrolls to it, flashes it, and marks it **active** (a highlighted ring on the pin and its row). With a comment active, press **Delete** or **Backspace** to remove it — that only fires while a comment is actively selected and your focus isn't in a text field, so it can't accidentally eat a keystroke while you're typing somewhere else on the page.
+
+Didn't drop the pin where you meant to? Drag it — grab any pin on the page and move it, no menu needed. Dropping it saves the new position immediately, the same as if you'd called `.moveComment(id, xPct, yPct)`.
+
+Two small icon buttons sit on each row in the Comments menu: a pencil to edit that comment's text (reopens the composer, prefilled, at the pin's spot) and a trash can to delete it outright, no confirmation dialog — same as pressing Delete on the active comment. `.deleteComment(id)` and `.editComment(id, text)` do the same two things programmatically.
 
 Don't need any of this? Pass `comments: false` and you get the plain scenario switcher, with no Comments button, menu, pin layer, or `localStorage` write — same as before this was the default.
 
@@ -153,11 +159,11 @@ The folder connection itself doesn't persist across a page reload — that's del
 
 ## Status
 
-Early — v0.4. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.5. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the bar's own click targets still work.
 
-Comments work today: pin placement, the Comments menu, click-to-select + Delete-key removal, `localStorage` persistence, `onComment`, Markdown export, hiding pins independently of the rest of the bar, and auto-saved markup snapshots to a local folder (Chromium browsers only).
+Comments work today: pin placement and drag-to-move, the Comments menu with per-comment edit/delete icons, click-to-select + Delete-key removal, `localStorage` persistence, `onComment`, Markdown export, hiding pins independently of the rest of the bar, and auto-saved markup snapshots to a local folder (Chromium browsers only). The screenshot folder connection now re-verifies its write permission before every save instead of failing silently if it had lapsed — a fix in this release, and any remaining failure logs a `console.warn` instead of disappearing.
 
 ## License
 
