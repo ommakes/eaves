@@ -452,13 +452,24 @@
     return this.root.classList.contains('eaves-hidden');
   };
 
+  // Hiding the bar is meant to leave a clean recording — comments and any
+  // note in progress need to disappear with it, not just the bar itself,
+  // since pins live in their own layer, separate from `root`. If pins were
+  // already independently hidden (via pinsShortcut/.hidePins()) before this
+  // call, that preference is restored as-is on the next show() rather than
+  // being overwritten.
   Eaves.prototype.hide = function () {
     this.collapse();
+    this._closeComposer();
+    this._pinsHiddenBeforeHide = this.arePinsHidden();
+    this.hidePins();
     this.root.classList.add('eaves-hidden');
   };
 
   Eaves.prototype.show = function () {
     this.root.classList.remove('eaves-hidden');
+    if (!this._pinsHiddenBeforeHide) this.showPins();
+    this._pinsHiddenBeforeHide = false;
   };
 
   Eaves.prototype.expand = function () {
