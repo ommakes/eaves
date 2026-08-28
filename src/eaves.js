@@ -241,10 +241,18 @@
     // so on a real multi-page prototype (separate HTML documents, not just
     // scenarios within one page) a comment left on one page would otherwise
     // resurface on any other page that happens to reuse the same scenario
-    // id. Scoping by the page's own path keeps them apart. Existing data
-    // saved before this existed has no pageKey at all — those are treated
-    // as matching every page rather than silently disappearing.
-    this._pageKey = (typeof location !== 'undefined' && location.pathname) || '';
+    // id. Scoping by the page's own path keeps them apart by default.
+    //
+    // That default only works for prototypes where "page" means a real
+    // navigation (the URL actually changes). A single-page-app flow — click
+    // Next, the content swaps, the URL never moves — gives Eaves no signal
+    // at all that anything changed, so pass `page` (or call `.setPage()`
+    // later, from your own "Next" handler) to say so explicitly.
+    //
+    // Existing data saved before this existed has no pageKey at all — those
+    // are treated as matching every page rather than silently disappearing.
+    var autoPageKey = (typeof location !== 'undefined' && location.pathname) || '';
+    this._pageKey = typeof options.page === 'string' ? options.page : autoPageKey;
     this.commentsData = this.comments ? loadComments() : [];
     this.pinsShortcut = this.comments ? parseShortcut(options.pinsShortcut || 'mod+shift+m') : null;
     this.openMenu = null;
@@ -1011,6 +1019,25 @@
     this._saveComments();
     this._renderPins();
     this._renderCommentsMenu();
+  };
+
+  // Tells Eaves the prototype has moved to a different "page" — for a
+  // single-page-app flow where the URL never changes, so the automatic
+  // location.pathname scoping (see the constructor) has nothing to key off
+  // of. Call this from your own "Next" / step-change handler with any
+  // stable id for the new page ("step-2", "checkout", whatever makes
+  // sense). Comments are then scoped to it the same way they'd be scoped
+  // to a real URL — a comment left on one page won't show up after you've
+  // moved to another, even if both reuse the same scenario id.
+  Eaves.prototype.setPage = function (pageKey) {
+    this._pageKey = pageKey;
+    this.activeCommentId = null;
+    this._renderPins();
+    this._renderCommentsMenu();
+  };
+
+  Eaves.prototype.getPage = function () {
+    return this._pageKey;
   };
 
   Eaves.prototype.arePinsHidden = function () {

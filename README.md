@@ -64,6 +64,7 @@ If you're building the prototype in Cursor, Claude Code, or another AI coding ag
 | `comments` | boolean | `true` | On by default. Lets a facilitator pin private feedback for the designer directly on the prototype — see [Comments](#comments) below. Pass `false` to get the plain scenario switcher with no Comments button or menu. |
 | `onComment` | `(comment) => void` | no-op | Fires as each comment is created — the recommended way to relay comments off the facilitator's own device (e.g. to a Slack webhook) when the prototype is on a shared or hosted link, not just a local build. |
 | `pinsShortcut` | string | `'mod+shift+m'` | Ignored when `comments: false`. Toggles pin visibility on the prototype, independent of `hideShortcut` and of whether the panel itself is open — for when a participant is watching the screen but the panel needs to stay reachable. |
+| `page` | string | `location.pathname` | What "page" new comments are scoped to — see [Comments](#comments) below. Only needed for a single-page-app flow where the URL doesn't change between steps; the default is right for a real multi-page prototype. |
 
 Instance methods:
 
@@ -86,6 +87,8 @@ Instance methods:
 | `.moveComment(id, xPct, yPct)` | Repositions a comment's pin. Returns `true` if the comment was found and moved. The programmatic counterpart to dragging a pin — see [Comments](#comments) below. |
 | `.exportComments()` | Returns every comment across every scenario as one Markdown string — see [Comments](#comments) below. |
 | `.clearComments()` | Wipes all stored comments for this instance. |
+| `.setPage(pageKey)` | Tells Eaves the prototype has moved to a different page — see [Comments](#comments) below. Clears the active comment selection and re-renders. |
+| `.getPage()` | Reads back the current page key (whatever `location.pathname` resolved to at construction, the `page` option, or the last `.setPage()` call). |
 | `.hidePins()` / `.showPins()` / `.arePinsHidden()` | Toggle pin visibility on the prototype. Mirrors `.hide()`/`.show()`/`.isHidden()`, but independent of them — hiding pins leaves the bar itself untouched. A no-op when `comments: false`. |
 | `.hasScreenshotFolder()` | `true` once a folder is connected for auto-saved snapshots — see [Screenshots](#screenshots) below. |
 
@@ -97,7 +100,9 @@ Both `shortcut` and `hideShortcut` default to letters, not punctuation like the 
 
 On by default — a **Comments** button sits next to **Scenarios** in the bar out of the box. Open it and click **+ Add**, then click anywhere on the prototype to drop a numbered pin and write a note — the same click-to-annotate flow as leaving a comment in Figma. Pins are scoped to the scenario they were left on and stored in `localStorage`, keyed by position as a percentage of the page (`xPct`/`yPct`), so they stay lined up with the right spot even if the window is resized.
 
-Comments are also scoped to the page they were left on (by `location.pathname`), so a multi-page prototype — separate HTML documents, not just scenarios within one page — never bleeds one page's notes onto another that happens to reuse the same scenario id. Comments saved before this existed have no page scoping recorded and still show up everywhere, same as before.
+Comments are also scoped to the page they were left on (by `location.pathname` by default), so a multi-page prototype — separate HTML documents, not just scenarios within one page — never bleeds one page's notes onto another that happens to reuse the same scenario id. Comments saved before this existed have no page scoping recorded and still show up everywhere, same as before.
+
+That automatic scoping only works when "page" means a real navigation — the URL actually changing. A single-page-app flow (click Next, the content swaps in place, the URL never moves) gives Eaves nothing to key off of, so without more information a comment left on step 1 will still be showing when you get to step 3. Call `.setPage(pageKey)` — any stable string, e.g. `'step-2'` — from your own "Next" handler whenever the flow moves on, and comments get scoped to it the same way they'd be scoped to a real URL. `getPage()` reads back whatever's currently set.
 
 Revisit any comment two ways — click its number badge in the Comments menu, or click its pin directly on the page — either one scrolls to it, flashes it, and marks it **active** (a highlighted ring on the pin and its row). With a comment active, press **Delete** or **Backspace** to remove it — that only fires while a comment is actively selected and your focus isn't in a text field, so it can't accidentally eat a keystroke while you're typing somewhere else on the page.
 
@@ -161,7 +166,7 @@ The folder connection itself doesn't persist across a page reload — that's del
 
 ## Status
 
-Early — v0.5. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.6. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the bar's own click targets still work.
 
