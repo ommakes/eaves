@@ -237,6 +237,14 @@
     this.label = options.label || 'Scenarios';
     this.comments = options.comments !== false;
     this.onComment = options.onComment || function () {};
+    // Comments live in one shared localStorage key across the whole origin,
+    // so on a real multi-page prototype (separate HTML documents, not just
+    // scenarios within one page) a comment left on one page would otherwise
+    // resurface on any other page that happens to reuse the same scenario
+    // id. Scoping by the page's own path keeps them apart. Existing data
+    // saved before this existed has no pageKey at all — those are treated
+    // as matching every page rather than silently disappearing.
+    this._pageKey = (typeof location !== 'undefined' && location.pathname) || '';
     this.commentsData = this.comments ? loadComments() : [];
     this.pinsShortcut = this.comments ? parseShortcut(options.pinsShortcut || 'mod+shift+m') : null;
     this.openMenu = null;
@@ -946,6 +954,7 @@
     var comment = {
       id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       scenarioId: this.activeId,
+      pageKey: this._pageKey,
       text: text,
       xPct: typeof opts.xPct === 'number' ? opts.xPct : null,
       yPct: typeof opts.yPct === 'number' ? opts.yPct : null,
@@ -977,8 +986,12 @@
   };
 
   Eaves.prototype.getComments = function (scenarioId) {
-    if (!scenarioId) return this.commentsData.slice();
-    return this.commentsData.filter(function (c) { return c.scenarioId === scenarioId; });
+    var self = this;
+    var onThisPage = this.commentsData.filter(function (c) {
+      return c.pageKey === undefined || c.pageKey === self._pageKey;
+    });
+    if (!scenarioId) return onThisPage;
+    return onThisPage.filter(function (c) { return c.scenarioId === scenarioId; });
   };
 
   Eaves.prototype.deleteComment = function (id) {
