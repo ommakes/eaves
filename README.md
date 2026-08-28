@@ -56,7 +56,7 @@ If you're building the prototype in Cursor, Claude Code, or another AI coding ag
 | `onSelect` | `(id, scenario) => void` | no-op | Fires when a scenario is picked. |
 | `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | `'bottom-right'` | Corner to anchor to initially. Dragging the bar by its grip handle overrides this for the rest of the session. |
 | `shortcut` | string | `'mod+shift+u'` | Keyboard combo to open/close the Scenarios menu. `mod` resolves to `Cmd` on macOS/iOS and `Ctrl` everywhere else. Pin a modifier explicitly with `meta`/`cmd`, `ctrl`, `shift`, or `alt` — e.g. `'ctrl+shift+k'`. |
-| `hideShortcut` | string | `'mod+shift+y'` | Keyboard combo that fully hides the bar itself, not just its menus — for a clean screen recording. Pressing `shortcut` while hidden reveals it again, so there's always a way back even if you forget this combo. |
+| `hideShortcut` | string | `'mod+shift+y'` | Keyboard combo that fully hides the bar itself, not just its menus — for a clean screen recording. Hiding the bar also hides comment pins and closes any note in progress, so nothing from the Comments layer leaks into the recording either; showing the bar again brings pins back too, unless they were already independently hidden via `pinsShortcut` before you hid the bar, in which case that choice is left alone. Pressing `shortcut` while hidden reveals it again, so there's always a way back even if you forget this combo. |
 | `label` | string | `'Scenarios'` | Label on the Scenarios button in the bar. |
 | `activeId` | string | first scenario | Which item starts selected. |
 | `startOpen` | boolean | `false` | Whether the Scenarios menu starts open. |
