@@ -482,6 +482,10 @@
   };
 
   Eaves.prototype.mount = function () {
+    // Tagged so a saved snapshot can leave Eaves' own UI out (see _captureSnapshot).
+    [this.root, this.scenesPopover, this.commentsPopover, this.pinLayer].forEach(function (el) {
+      if (el) el.setAttribute('data-eaves-ui', '');
+    });
     document.body.appendChild(this.root);
     document.body.appendChild(this.scenesPopover);
     if (this.commentsPopover) document.body.appendChild(this.commentsPopover);
@@ -896,8 +900,19 @@
   // README for what that does and doesn't capture (typed-but-unsaved form input,
   // <canvas>/<video> content, and locally-hosted assets don't come through).
   // No permission prompt: this only reads content the page already has access to.
+  //
+  // Works on a clone, so the live page is untouched. Eaves' own UI (the bar, its
+  // menus, the pins and any open note box) and its stylesheet are left out: the
+  // snapshot shows the prototype, plus the one static marker for this comment.
   Eaves.prototype._captureSnapshot = function (xPct, yPct, number) {
-    var html = document.documentElement.outerHTML;
+    var clone = document.documentElement.cloneNode(true);
+    var own = clone.querySelectorAll('[data-eaves-ui], #' + STYLE_ID);
+    for (var i = 0; i < own.length; i++) {
+      if (own[i].parentNode) own[i].parentNode.removeChild(own[i]);
+    }
+    var body = clone.querySelector('body');
+    if (body) body.classList.remove('eaves-placing');
+    var html = clone.outerHTML;
     var marker = buildSnapshotMarkerHtml(xPct, yPct, number);
     return html.indexOf('</body>') > -1 ? html.replace('</body>', marker + '</body>') : html + marker;
   };
@@ -1153,9 +1168,13 @@
     var a = document.createElement('a');
     a.href = url;
     a.download = 'eaves-comments-' + new Date().toISOString().slice(0, 10) + '.md';
-    document.body.appendChild(a);
+    // The temporary link goes inside the menu, not on <body>: a click outside the
+    // menu closes it, and this click is Eaves' own, not the user leaving.
+    a.style.display = 'none';
+    var host = this.commentsPopover || document.body;
+    host.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    host.removeChild(a);
     URL.revokeObjectURL(url);
   };
 

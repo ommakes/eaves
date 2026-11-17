@@ -159,7 +159,7 @@ Click **Save screenshots to a folder…** in the Comments menu, pick a folder on
 
 Two things worth knowing about how this actually works, since it's not what "screenshot" usually implies:
 
-- **It's a copy of the page's markup, not a photo of the screen.** There's no browser API that lets a page silently capture real pixels — that always requires an explicit "share your screen" prompt, no way around it. So instead, each snapshot is `document.documentElement.outerHTML` at the moment the pin gets placed, with a small static marker baked in at the same spot as the pin — a real, openable `.html` file, not an image.
+- **It's a copy of the page's markup, not a photo of the screen.** There's no browser API that lets a page silently capture real pixels — that always requires an explicit "share your screen" prompt, no way around it. So instead, each snapshot is a copy of the page's markup at the moment the pin gets placed, with a small static marker baked in at the same spot as the pin — a real, openable `.html` file, not an image. Eaves' own bar, menus, pins and stylesheet are left out, so the file shows the prototype and nothing else.
 - **That means a few things don't come through**: text someone just typed into a form field on the prototype (the browser doesn't reflect it back into the HTML the same way), anything drawn on a `<canvas>` or playing in a `<video>`, and images/stylesheets loaded from a local dev server rather than a stable URL — those 404 once the snapshot is opened somewhere else, later. Assets on a CDN or bundled inline keep working fine.
 
 The folder connection itself doesn't persist across a page reload — that's deliberate, to avoid needing any storage beyond what's already used for comment text. `.hasScreenshotFolder()` tells you whether one's currently connected.
@@ -183,7 +183,7 @@ The rest (`--eaves-stroke`, `--eaves-highlight`, `--eaves-shadow`, `--eaves-text
 
 ## Status
 
-Early — v0.7. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.7.1. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the bar's own click targets still work.
 
