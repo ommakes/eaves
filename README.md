@@ -164,9 +164,26 @@ Two things worth knowing about how this actually works, since it's not what "scr
 
 The folder connection itself doesn't persist across a page reload — that's deliberate, to avoid needing any storage beyond what's already used for comment text. `.hasScreenshotFolder()` tells you whether one's currently connected.
 
+## Look and theming
+
+The panel is frosted glass: a dark tint, a 16px blur, a 1px edge and a soft top highlight. Corners are 12px on the bar, menus and note box, and 8px on the rows inside them. Where the browser has no `backdrop-filter`, or the user asks for reduced transparency, the panel falls back to a solid `#2c2c2c`. The pin flash and hover scale switch off under reduced motion, and the small icon buttons grow on touch screens.
+
+Every value is a CSS custom property with a default. To change the look, set the ones you want on `:root` in your own CSS:
+
+| Property | Default | What it does |
+|---|---|---|
+| `--eaves-tint` | `rgba(44,44,44,.78)` | Glass fill. Keep it dark and at least 65% opaque: the text is white and has to stay readable over a white page. |
+| `--eaves-fill` | `#2c2c2c` | Solid fill, used when blur is not available. |
+| `--eaves-blur` | `16px` | Blur behind the panel. |
+| `--eaves-radius` | `12px` | Corner of the bar, menus and note box. |
+| `--eaves-radius-inner` | `8px` | Corner of rows and the note field inside them. |
+| `--eaves-radius-control` | `6px` | Corner of buttons. |
+
+The rest (`--eaves-stroke`, `--eaves-highlight`, `--eaves-shadow`, `--eaves-text`, `--eaves-text-muted`, `--eaves-icon`, `--eaves-accent`, `--eaves-hover`, `--eaves-press`, `--eaves-dur`) are at the top of `src/eaves.js`.
+
 ## Status
 
-Early — v0.6. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
+Early — v0.7. Built for a single, common shape (a flat list of named scenarios). Grouped/nested variants and a React wrapper are likely next, depending on what people actually need.
 
 The default shortcut was exercised in headless Chromium under macOS and Windows user agents. One known limit: Eaves listens on `document`, so a host page that calls `stopPropagation()` on `keydown` first will swallow the shortcut — the bar's own click targets still work.
 
