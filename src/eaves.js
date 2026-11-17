@@ -18,49 +18,72 @@
   var instanceCount = 0;
 
   var CSS = [
+    // Look: frosted glass, standard tier (Vois DS-GLASS). Every surface (bar, menus,
+    // note composer) shares these tokens, so a host page can restyle the whole panel
+    // by setting --eaves-* on :root (or any ancestor). The tint is a dark neutral, not white-at-low-alpha:
+    // Eaves is always a dark panel with white text over *any* prototype, so the tint
+    // has to hold 4.5:1 against the lightest page it can sit on (tested on white).
+    // :where() keeps the defaults at zero specificity, so a host's own :root rule wins in any order.
+    ':where(:root){' +
+      '--eaves-fill:#2c2c2c;' +                       // opaque fallback, used first
+      '--eaves-tint:rgba(44,44,44,.78);' +            // glass fill
+      '--eaves-blur:16px;--eaves-saturate:160%;' +
+      '--eaves-stroke:rgba(255,255,255,.12);--eaves-highlight:rgba(255,255,255,.12);' +
+      '--eaves-shadow:0 8px 32px rgba(0,0,0,.2);' +
+      '--eaves-shadow-pin:0 2px 6px rgba(0,0,0,.35);' +
+      '--eaves-radius:12px;--eaves-radius-inner:8px;--eaves-radius-control:6px;' + // surface, concentric child (12 - 4 padding), control
+      '--eaves-dur:150ms;--eaves-dur-flash:600ms;--eaves-ease:ease;' +
+      '--eaves-text:#fff;--eaves-text-muted:#d8d8d8;--eaves-icon:#c4c4c4;--eaves-accent:#b3d7ff;' +
+      '--eaves-hover:rgba(255,255,255,.06);--eaves-press:rgba(255,255,255,.12);--eaves-field:rgba(255,255,255,.06);' +
+    '}',
     '.eaves-root{position:fixed;z-index:2147483000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:12px;line-height:1.4;}',
     '.eaves-root[data-position="bottom-right"]{bottom:16px;right:16px;}',
     '.eaves-root[data-position="bottom-left"]{bottom:16px;left:16px;}',
     '.eaves-root[data-position="top-right"]{top:16px;right:16px;}',
     '.eaves-root[data-position="top-left"]{top:16px;left:16px;}',
     '.eaves-root.eaves-hidden{display:none;}',
-    '.eaves-bar{display:flex;align-items:stretch;height:40px;background:#2c2c2c;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.25);}',
-    '.eaves-grip{width:20px;flex:none;display:flex;align-items:center;justify-content:center;color:#b1b1b1;cursor:grab;touch-action:none;}',
+    // The glass surface. Opaque first; blur is added only where it is supported.
+    '.eaves-bar,.eaves-popover,.eaves-composer{box-sizing:border-box;background-color:var(--eaves-fill);border:1px solid var(--eaves-stroke);border-radius:var(--eaves-radius);box-shadow:inset 0 1px 0 var(--eaves-highlight),var(--eaves-shadow);}',
+    '@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.eaves-bar,.eaves-popover,.eaves-composer{background-color:var(--eaves-tint);-webkit-backdrop-filter:blur(var(--eaves-blur)) saturate(var(--eaves-saturate));backdrop-filter:blur(var(--eaves-blur)) saturate(var(--eaves-saturate));}}',
+    '@media (prefers-reduced-transparency:reduce){.eaves-bar,.eaves-popover,.eaves-composer{background-color:var(--eaves-fill);-webkit-backdrop-filter:none;backdrop-filter:none;}}',
+    '.eaves-bar{display:flex;align-items:stretch;height:40px;overflow:hidden;}',
+    '.eaves-grip{width:20px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--eaves-icon);cursor:grab;touch-action:none;}',
     '.eaves-grip:active{cursor:grabbing;}',
     '.eaves-grip svg{width:16px;height:16px;}',
     '.eaves-bar-mid{display:flex;align-items:center;padding:0 4px;}',
-    '.eaves-bar-btn{display:flex;align-items:center;gap:2px;background:none;border:none;color:#fff;font-size:12px;font-weight:500;font-family:inherit;padding:6px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:background .15s ease;}',
-    '.eaves-bar-btn:hover,.eaves-bar-btn[data-active="true"]{background:rgba(255,255,255,.06);}',
+    '.eaves-bar-btn{display:flex;align-items:center;gap:2px;background:none;border:none;color:var(--eaves-text);font-size:12px;font-weight:500;font-family:inherit;padding:6px 8px;border-radius:var(--eaves-radius-control);cursor:pointer;white-space:nowrap;transition:background var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-bar-btn:hover,.eaves-bar-btn[data-active="true"]{background:var(--eaves-hover);}',
     '.eaves-bar-btn:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
-    '.eaves-bar-btn svg{width:14px;height:14px;color:#7e7e7e;flex:none;}',
-    '.eaves-bar-divider{width:1px;align-self:center;height:24px;background:#505050;margin:0 4px;flex:none;}',
-    '.eaves-bar-close{width:24px;flex:none;display:flex;align-items:center;justify-content:center;color:#b1b1b1;cursor:pointer;transition:color .15s ease;}',
-    '.eaves-bar-close:hover{color:#fff;}',
+    '.eaves-bar-btn svg{width:14px;height:14px;color:var(--eaves-icon);flex:none;}',
+    '.eaves-bar-divider{width:1px;align-self:center;height:24px;background:var(--eaves-stroke);margin:0 4px;flex:none;}',
+    '.eaves-bar-close{width:28px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--eaves-icon);cursor:pointer;transition:color var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-bar-close:hover{color:var(--eaves-text);}',
     '.eaves-bar-close:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
     '.eaves-bar-close svg{width:16px;height:16px;}',
     '.eaves-grip,.eaves-bar-close{border:none;padding:0;}',
-    '.eaves-popover{position:absolute;z-index:2147483000;background:#2c2c2c;border-radius:8px;padding:4px;box-shadow:0 8px 30px rgba(0,0,0,.35);min-width:172px;max-width:260px;box-sizing:border-box;display:none;}',
+    '.eaves-popover{position:absolute;z-index:2147483000;padding:4px;min-width:172px;max-width:260px;display:none;}',
     '.eaves-popover.eaves-popover-open{display:block;}',
     '.eaves-popover-list{display:flex;flex-direction:column;}',
-    '.eaves-popover-row{display:flex;align-items:center;gap:4px;width:100%;min-height:23px;padding:4px;background:none;border:none;color:#fff;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:6px;transition:background .15s ease;}',
-    '.eaves-popover-row:hover{background:rgba(255,255,255,.06);}',
+    '.eaves-popover-row{display:flex;align-items:center;gap:4px;width:100%;min-height:23px;padding:4px;background:none;border:none;color:var(--eaves-text);font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:var(--eaves-radius-inner);transition:background var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-popover-row:hover{background:var(--eaves-hover);}',
     '.eaves-popover-row:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
-    '.eaves-popover-check{width:14px;height:14px;flex:none;color:#95c7ff;display:flex;align-items:center;justify-content:center;}',
-    '.eaves-popover-num{width:14px;flex:none;color:#95c7ff;font-weight:600;text-align:center;}',
+    '.eaves-popover-check{width:14px;height:14px;flex:none;color:var(--eaves-accent);display:flex;align-items:center;justify-content:center;}',
+    '.eaves-popover-num{width:14px;flex:none;color:var(--eaves-accent);font-weight:600;text-align:center;}',
     '.eaves-popover-row-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
     '.eaves-popover-comment-row{display:flex;align-items:center;gap:2px;width:100%;}',
-    '.eaves-popover-comment-select{display:flex;align-items:center;gap:4px;flex:1;min-width:0;min-height:23px;padding:4px;background:none;border:none;color:#fff;font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:6px;transition:background .15s ease;}',
-    '.eaves-popover-comment-select:hover{background:rgba(255,255,255,.06);}',
+    '.eaves-popover-comment-select{display:flex;align-items:center;gap:4px;flex:1;min-width:0;min-height:23px;padding:4px;background:none;border:none;color:var(--eaves-text);font-size:12px;font-family:inherit;text-align:left;cursor:pointer;border-radius:var(--eaves-radius-inner);transition:background var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-popover-comment-select:hover{background:var(--eaves-hover);}',
     '.eaves-popover-comment-select:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
-    '.eaves-popover-comment-row[data-active-comment="true"] .eaves-popover-comment-select{background:rgba(255,255,255,.12);}',
+    '.eaves-popover-comment-row[data-active-comment="true"] .eaves-popover-comment-select{background:var(--eaves-press);}',
     '.eaves-popover-comment-actions{display:flex;gap:2px;flex:none;}',
-    '.eaves-popover-icon-btn{display:flex;align-items:center;justify-content:center;width:22px;height:22px;flex:none;background:none;border:none;color:#9a9a9a;padding:0;border-radius:5px;cursor:pointer;transition:background .15s ease,color .15s ease;}',
-    '.eaves-popover-icon-btn:hover{background:rgba(255,255,255,.08);color:#fff;}',
+    // Icon buttons follow the DS icon-sm size: 28 box, 16 glyph (36 / 20 on a coarse pointer).
+    '.eaves-popover-icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;background:none;border:none;color:var(--eaves-icon);padding:0;border-radius:var(--eaves-radius-control);cursor:pointer;transition:background var(--eaves-dur) var(--eaves-ease),color var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-popover-icon-btn:hover{background:var(--eaves-press);color:var(--eaves-text);}',
     '.eaves-popover-icon-btn:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
-    '.eaves-popover-icon-btn svg{width:13px;height:13px;}',
-    '.eaves-popover-empty{font-size:12px;color:#8a8a8a;padding:6px 8px;}',
-    '.eaves-popover-add{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:28px;background:rgba(255,255,255,.04);border:none;color:#f0f0f0;font-size:12px;font-weight:600;font-family:inherit;border-radius:6px;cursor:pointer;margin-top:4px;transition:background .15s ease;}',
-    '.eaves-popover-add:hover{background:rgba(255,255,255,.08);}',
+    '.eaves-popover-icon-btn svg{width:16px;height:16px;}',
+    '.eaves-popover-empty{font-size:12px;color:var(--eaves-text-muted);padding:6px 8px;}',
+    '.eaves-popover-add{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;height:28px;background:var(--eaves-hover);border:none;color:#f0f0f0;font-size:12px;font-weight:600;font-family:inherit;border-radius:var(--eaves-radius-control);cursor:pointer;margin-top:4px;transition:background var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-popover-add:hover{background:var(--eaves-press);}',
     '.eaves-popover-add:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
     '.eaves-popover-add svg{width:14px;height:14px;}',
     '.eaves-popover-export{display:flex;gap:4px;margin-top:4px;}',
@@ -68,24 +91,30 @@
     '.eaves-popover-folder{font-size:11px;}',
     '.eaves-pin-layer{position:absolute;top:0;left:0;z-index:2147483000;pointer-events:none;}',
     '.eaves-pin-layer.eaves-pins-hidden{display:none;}',
-    '.eaves-pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;background:#fff;border:none;border-radius:16px 16px 16px 0;cursor:grab;touch-action:none;pointer-events:auto;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s ease;}',
+    // Pins mark a spot on the prototype. They are content, not chrome, so no glass.
+    '.eaves-pin{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;padding:2px;box-sizing:border-box;background:#fff;border:none;border-radius:16px 16px 16px 0;cursor:grab;touch-action:none;pointer-events:auto;box-shadow:var(--eaves-shadow-pin);transition:transform var(--eaves-dur) var(--eaves-ease);}',
     '.eaves-pin:hover{transform:scale(1.08);}',
     '.eaves-pin.eaves-pin-dragging{cursor:grabbing;transition:none;transform:scale(1.08);}',
     '.eaves-pin:focus-visible{outline:2px solid #95c7ff;outline-offset:2px;}',
     '.eaves-pin-inner{width:100%;height:100%;border-radius:50%;background:#ffde69;display:flex;align-items:center;justify-content:center;}',
     '.eaves-pin-inner span{color:#0f0f0f;font-size:12px;font-weight:600;}',
     '.eaves-pin[data-active="true"] .eaves-pin-inner{outline:2px solid #95c7ff;outline-offset:1px;}',
-    '.eaves-pin.eaves-pin-flash{animation:eaves-pin-flash .6s ease;}',
+    '.eaves-pin.eaves-pin-flash{animation:eaves-pin-flash var(--eaves-dur-flash) var(--eaves-ease);}',
     '@keyframes eaves-pin-flash{0%,100%{transform:scale(1);}30%{transform:scale(1.35);}}',
-    '.eaves-composer{position:absolute;z-index:2147483000;background:#2c2c2c;border-radius:8px;padding:4px 4px 8px;width:220px;box-sizing:border-box;pointer-events:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);}',
-    '.eaves-composer textarea{width:100%;min-height:60px;background:rgba(255,255,255,.04);color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;}',
+    '.eaves-composer{position:absolute;z-index:2147483000;padding:4px 4px 8px;width:220px;pointer-events:auto;}',
+    '.eaves-composer textarea{width:100%;min-height:60px;background:var(--eaves-field);color:var(--eaves-text);border:none;border-radius:var(--eaves-radius-inner);padding:8px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;}',
+    '.eaves-composer textarea::placeholder{color:var(--eaves-text-muted);opacity:1;}',
     '.eaves-composer textarea:focus-visible{outline:2px solid #ffde69;outline-offset:1px;}',
     '.eaves-composer-actions{display:flex;gap:8px;margin-top:8px;padding:0 4px;justify-content:flex-end;}',
-    '.eaves-composer-btn{background:rgba(255,255,255,.04);border:none;color:#f0f0f0;font-size:12px;font-weight:600;font-family:inherit;padding:0 8px;height:28px;border-radius:6px;cursor:pointer;transition:background .15s ease;}',
-    '.eaves-composer-btn:hover{background:rgba(255,255,255,.08);}',
+    '.eaves-composer-btn{background:var(--eaves-hover);border:none;color:#f0f0f0;font-size:12px;font-weight:600;font-family:inherit;padding:0 8px;height:28px;border-radius:var(--eaves-radius-control);cursor:pointer;transition:background var(--eaves-dur) var(--eaves-ease);}',
+    '.eaves-composer-btn:hover{background:var(--eaves-press);}',
     '.eaves-composer-btn:focus-visible{outline:2px solid #ffde69;outline-offset:-2px;}',
     '.eaves-composer-btn[data-primary="true"]{background:#ffde69;color:#0f0f0f;min-width:64px;}',
     '.eaves-composer-btn[data-primary="true"]:hover{background:#ffe58f;}',
+    // A finger needs a bigger target than a cursor: icon-sm steps up to 36 / 20.
+    '@media (pointer:coarse){.eaves-popover-icon-btn{width:36px;height:36px;}.eaves-popover-icon-btn svg{width:20px;height:20px;}.eaves-bar-close{width:36px;}}',
+    // Reduced motion: the pin flash is a one-off effect, so it is absent, not replaced.
+    '@media (prefers-reduced-motion:reduce){.eaves-bar-btn,.eaves-bar-close,.eaves-popover-row,.eaves-popover-comment-select,.eaves-popover-icon-btn,.eaves-popover-add,.eaves-composer-btn,.eaves-pin{transition:none;}.eaves-pin:hover{transform:none;}.eaves-pin.eaves-pin-flash{animation:none;}}',
     'body.eaves-placing,body.eaves-placing *{cursor:crosshair !important;}'
   ].join('');
 
